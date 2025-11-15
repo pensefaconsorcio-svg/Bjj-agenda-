@@ -181,8 +181,8 @@ const initialSiteSettings: SiteSettings = {
 };
 
 const initialUsers: User[] = [
-    { id: 1, email: 'admin@bjj.com', role: 'admin' },
-    { id: 2, email: 'user@bjj.com', role: 'user' },
+    { id: 1, email: 'admin@bjj.com', name: 'Administrador', role: 'admin', paymentDueDate: null },
+    { id: 2, email: 'user@bjj.com', name: 'Aluno Exemplo', role: 'user', paymentDueDate: '2024-08-15' },
 ];
 
 const initialCredentials: { [email: string]: string } = {
@@ -296,15 +296,21 @@ const App: React.FC = () => {
     return false;
   };
 
-  const handleRegister = (newUserData: { email: string; pass: string }): User | null => {
+  const handleRegister = (newUserData: { email: string; pass: string; name: string }): User | null => {
     if (users.some(u => u.email === newUserData.email)) {
       alert('Este e-mail já está cadastrado.');
       return null;
     }
+    const today = new Date();
+    today.setDate(today.getDate() + 30); // Set due date 30 days from now
+    const dueDate = today.toISOString().split('T')[0];
+
     const newUser: User = {
       id: Date.now(),
       email: newUserData.email,
+      name: newUserData.name,
       role: 'user',
+      paymentDueDate: dueDate,
     };
     setUsers(prev => [...prev, newUser]);
     setCredentials(prev => ({ ...prev, [newUserData.email]: newUserData.pass }));
@@ -316,7 +322,7 @@ const App: React.FC = () => {
   };
 
   // User Management by Admin
-  const handleCreateUser = (newUserData: { email: string; pass: string; role: 'admin' | 'user' }): boolean => {
+  const handleCreateUser = (newUserData: { email: string; pass: string; role: 'admin' | 'user'; name: string; paymentDueDate: string | null }): boolean => {
     if (users.some(u => u.email === newUserData.email)) {
       alert('Este e-mail já está cadastrado.');
       return false;
@@ -324,13 +330,29 @@ const App: React.FC = () => {
     const newUser: User = {
       id: Date.now(),
       email: newUserData.email,
+      name: newUserData.name,
       role: newUserData.role,
+      paymentDueDate: newUserData.role === 'admin' ? null : newUserData.paymentDueDate,
     };
     setUsers(prev => [...prev, newUser]);
     setCredentials(prev => ({ ...prev, [newUserData.email]: newUserData.pass }));
     return true;
   };
   
+  const handleUpdateUser = (updatedUserData: User & { pass?: string }) => {
+      const { pass, ...userToUpdate } = updatedUserData;
+      const originalUser = users.find(u => u.id === userToUpdate.id);
+      if (!originalUser) return;
+  
+      // Update user details
+      setUsers(prev => prev.map(u => u.id === userToUpdate.id ? { ...originalUser, ...userToUpdate } : u));
+      
+      // Update password if a new one was provided
+      if (pass && pass.length > 0) {
+          setCredentials(prev => ({ ...prev, [originalUser.email]: pass }));
+      }
+  };
+
   const handleDeleteUser = (userId: number) => {
     if (userId === currentUser?.id) {
         alert('Você não pode excluir sua própria conta.');
@@ -594,6 +616,7 @@ const App: React.FC = () => {
                   users={users}
                   currentUser={currentUser!}
                   onCreateUser={handleCreateUser}
+                  onUpdateUser={handleUpdateUser}
                   onDeleteUser={handleDeleteUser}
                 />;
       default:

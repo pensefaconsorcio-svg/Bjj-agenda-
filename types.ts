@@ -2,7 +2,9 @@
 export interface User {
   id: number;
   email: string;
+  name: string;
   role: 'admin' | 'user';
+  paymentDueDate: string | null; // YYYY-MM-DD format
 }
 
 export interface ClassSession {

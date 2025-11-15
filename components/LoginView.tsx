@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { type User, type SiteSettings } from '../types';
 import { GoogleIcon } from './icons/GoogleIcon';
 
 interface LoginViewProps {
   onLogin: (credentials: { email: string, pass: string }) => boolean;
-  onRegister: (credentials: { email: string, pass: string }) => User | null;
+  onRegister: (credentials: { email: string, pass: string, name: string }) => User | null;
   siteSettings: SiteSettings;
 }
 
@@ -17,6 +18,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onRegister, siteSettings
     const [loginError, setLoginError] = useState('');
     
     // Register state
+    const [regName, setRegName] = useState('');
     const [regEmail, setRegEmail] = useState('');
     const [regPassword, setRegPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -42,7 +44,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onRegister, siteSettings
             setRegError('A senha deve ter pelo menos 6 caracteres.');
             return;
         }
-        onRegister({ email: regEmail, pass: regPassword });
+        onRegister({ email: regEmail, pass: regPassword, name: regName });
     };
 
     const handleGoogleRegister = () => {
@@ -52,7 +54,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onRegister, siteSettings
             // In a real app, you'd get a token. Here, we just register them.
             // Using a random password since it won't be used for login again this way.
             const randomPassword = Math.random().toString(36).slice(-8); 
-            onRegister({ email: googleEmail, pass: randomPassword });
+            onRegister({ email: googleEmail, pass: randomPassword, name: googleEmail.split('@')[0] });
         }
     };
     
@@ -132,6 +134,10 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onRegister, siteSettings
                                 <p className="mt-2 text-gray-400">Junte-se a nós e comece sua jornada.</p>
                             </div>
                             <form className="space-y-4" onSubmit={handleRegisterSubmit}>
+                                <div>
+                                    <label htmlFor="name-reg" className="block text-sm font-medium text-gray-300">Nome Completo</label>
+                                    <input id="name-reg" name="name" type="text" required value={regName} onChange={(e) => setRegName(e.target.value)} className="mt-1 block w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="Seu nome completo" />
+                                </div>
                                 <div>
                                     <label htmlFor="email-reg" className="block text-sm font-medium text-gray-300">Email</label>
                                     <input id="email-reg" name="email" type="email" required value={regEmail} onChange={(e) => setRegEmail(e.target.value)} className="mt-1 block w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="seu@email.com" />

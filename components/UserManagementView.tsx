@@ -1,35 +1,82 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { type User } from '../types';
 import Modal from './Modal';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { TrashIcon } from './icons/TrashIcon';
+import { EditIcon } from './icons/EditIcon';
 
 interface UserManagementViewProps {
   users: User[];
   currentUser: User;
-  onCreateUser: (userData: { email: string; pass: string; role: 'admin' | 'user' }) => boolean;
+  onCreateUser: (userData: { email: string; pass: string; role: 'admin' | 'user'; name: string; paymentDueDate: string | null }) => boolean;
+  onUpdateUser: (userData: User & { pass?: string }) => void;
   onDeleteUser: (userId: number) => void;
 }
 
-const initialFormState = {
+type FormData = {
+  name: string;
+  email: string;
+  pass: string;
+  role: 'admin' | 'user';
+  paymentDueDate: string | null;
+}
+
+const initialFormState: FormData = {
+  name: '',
   email: '',
   pass: '',
-  role: 'user' as 'admin' | 'user',
+  role: 'user',
+  paymentDueDate: new Date().toISOString().split('T')[0],
 };
 
-const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentUser, onCreateUser, onDeleteUser }) => {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [formData, setFormData] = useState(initialFormState);
+const getPaymentStatus = (dueDate: string | null) => {
+    if (!dueDate) {
+        return { text: 'N/A', color: 'bg-gray-600 text-gray-200' };
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); 
+    const dueDateObj = new Date(dueDate + 'T00:00:00');
+
+    if (dueDateObj < today) {
+        return { text: 'Vencido', color: 'bg-red-300 text-red-900' };
+    } else if (dueDateObj.getTime() === today.getTime()) {
+        return { text: 'Vence hoje', color: 'bg-yellow-300 text-yellow-900' };
+    } else {
+        return { text: 'Em dia', color: 'bg-green-300 text-green-900' };
+    }
+};
+
+
+const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentUser, onCreateUser, onUpdateUser, onDeleteUser }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [formData, setFormData] = useState<FormData>(initialFormState);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
+  useEffect(() => {
+    if (editingUser) {
+        const { name, email, role, paymentDueDate } = editingUser;
+        setFormData({ name, email, role, paymentDueDate, pass: '' });
+    } else {
+        setFormData(initialFormState);
+    }
+  }, [editingUser, isModalOpen]);
+
+
   const handleOpenAddModal = () => {
-    setFormData(initialFormState);
-    setIsAddModalOpen(true);
+    setEditingUser(null);
+    setIsModalOpen(true);
   };
 
-  const handleCloseAddModal = () => {
-    setIsAddModalOpen(false);
+  const handleOpenEditModal = (user: User) => {
+    setEditingUser(user);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingUser(null);
   };
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -39,13 +86,26 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.email && formData.pass) {
-      const success = onCreateUser(formData);
-      if (success) {
-        handleCloseAddModal();
-      }
+
+    if (editingUser) {
+        if(formData.pass && formData.pass.length < 6) {
+            alert('A nova senha deve ter pelo menos 6 caracteres.');
+            return;
+        }
+        onUpdateUser({ ...editingUser, ...formData });
+        handleCloseModal();
     } else {
-      alert('Por favor, preencha todos os campos.');
+       if (formData.email && formData.pass) {
+          const success = onCreateUser({
+            ...formData, 
+            paymentDueDate: formData.role === 'admin' ? null : formData.paymentDueDate
+          });
+          if (success) {
+            handleCloseModal();
+          }
+        } else {
+          alert('Por favor, preencha todos os campos obrigatórios.');
+        }
     }
   };
 
@@ -72,37 +132,59 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
           <table className="w-full text-left">
             <thead className="bg-gray-900/50">
               <tr>
-                <th className="p-4 text-sm font-semibold text-gray-300">Email</th>
+                <th className="p-4 text-sm font-semibold text-gray-300">Usuário</th>
+                <th className="p-4 text-sm font-semibold text-gray-300">Vencimento</th>
+                <th className="p-4 text-sm font-semibold text-gray-300">Status</th>
                 <th className="p-4 text-sm font-semibold text-gray-300">Função</th>
                 <th className="p-4 text-sm font-semibold text-gray-300 text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
-              {users.map(user => (
-                <tr key={user.id} className="hover:bg-gray-700/50">
-                  <td className="p-4 text-gray-100">{user.email}</td>
-                  <td className="p-4">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      user.role === 'admin' 
-                      ? 'bg-red-200 text-red-800' 
-                      : 'bg-gray-600 text-gray-200'
-                    }`}>
-                      {user.role === 'admin' ? 'Admin' : 'Usuário'}
-                    </span>
-                  </td>
-                  <td className="p-4 text-right">
-                    <button
-                      onClick={() => setUserToDelete(user)}
-                      disabled={user.id === currentUser.id}
-                      className="p-2 text-gray-400 hover:text-red-500 rounded-full transition-colors disabled:text-gray-600 disabled:cursor-not-allowed"
-                      aria-label={`Excluir usuário ${user.email}`}
-                      title={user.id === currentUser.id ? 'Não é possível excluir a si mesmo' : 'Excluir usuário'}
-                    >
-                      <TrashIcon />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {users.map(user => {
+                  const paymentStatus = getPaymentStatus(user.paymentDueDate);
+                  return (
+                    <tr key={user.id} className="hover:bg-gray-700/50">
+                      <td className="p-4">
+                        <p className="font-medium text-gray-100">{user.name}</p>
+                        <p className="text-sm text-gray-400">{user.email}</p>
+                      </td>
+                      <td className="p-4 text-gray-300 font-mono text-sm">
+                        {user.paymentDueDate ? new Date(user.paymentDueDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}
+                      </td>
+                      <td className="p-4">
+                        <span className={`px-2 py-1 text-xs font-bold rounded-full ${paymentStatus.color}`}>
+                            {paymentStatus.text}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                          user.role === 'admin' 
+                          ? 'bg-red-300 text-red-900' 
+                          : 'bg-gray-600 text-gray-200'
+                        }`}>
+                          {user.role === 'admin' ? 'Admin' : 'Usuário'}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right">
+                         <button
+                            onClick={() => handleOpenEditModal(user)}
+                            className="p-2 mr-2 text-gray-400 hover:text-red-500 rounded-full transition-colors"
+                            aria-label={`Editar usuário ${user.name}`}
+                          >
+                            <EditIcon />
+                          </button>
+                        <button
+                          onClick={() => setUserToDelete(user)}
+                          disabled={user.id === currentUser.id}
+                          className="p-2 text-gray-400 hover:text-red-500 rounded-full transition-colors disabled:text-gray-600 disabled:cursor-not-allowed"
+                          aria-label={`Excluir usuário ${user.name}`}
+                          title={user.id === currentUser.id ? 'Não é possível excluir a si mesmo' : 'Excluir usuário'}
+                        >
+                          <TrashIcon />
+                        </button>
+                      </td>
+                    </tr>
+                )})}
             </tbody>
           </table>
         </div>
@@ -112,8 +194,16 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
       <Modal isOpen={!!userToDelete} onClose={() => setUserToDelete(null)} title="Confirmar Exclusão">
         {userToDelete && (
           <div>
-            <p className="text-gray-300">Tem certeza que deseja excluir permanentemente o usuário <span className="font-bold text-red-400">{userToDelete.email}</span>?</p>
-            <p className="text-sm text-yellow-400 mt-2">Esta ação não pode ser desfeita.</p>
+            <p className="text-gray-300 mb-4">
+              Tem certeza que deseja excluir permanentemente o usuário abaixo?
+            </p>
+            <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
+              <p className="font-semibold text-gray-100">{userToDelete.name}</p>
+              <p className="text-sm text-gray-400">{userToDelete.email}</p>
+            </div>
+            <p className="text-sm text-yellow-500 mt-4">
+              <strong>Atenção:</strong> Esta ação não pode ser desfeita.
+            </p>
             <div className="mt-6 flex justify-end space-x-4">
               <button
                 onClick={() => setUserToDelete(null)}
@@ -132,39 +222,42 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
         )}
       </Modal>
 
-      {/* Add User Modal */}
-      <Modal isOpen={isAddModalOpen} onClose={handleCloseAddModal} title="Adicionar Novo Usuário">
+      {/* Add/Edit User Modal */}
+      <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingUser ? 'Editar Usuário' : 'Adicionar Novo Usuário'}>
         <form onSubmit={handleFormSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+           <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">Nome Completo</label>
             <input 
-              type="email" 
-              id="email" 
-              name="email" 
-              value={formData.email} 
-              onChange={handleFormChange} 
-              required 
+              type="text" id="name" name="name" value={formData.name} 
+              onChange={handleFormChange} required 
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500" 
             />
           </div>
           <div>
-            <label htmlFor="pass" className="block text-sm font-medium text-gray-300 mb-1">Senha</label>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+            <input 
+              type="email" id="email" name="email" value={formData.email} 
+              onChange={handleFormChange} required
+              disabled={!!editingUser}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-800 disabled:cursor-not-allowed" 
+            />
+          </div>
+          <div>
+            <label htmlFor="pass" className="block text-sm font-medium text-gray-300 mb-1">
+              {editingUser ? 'Nova Senha (opcional)' : 'Senha'}
+            </label>
             <input
-              type="password"
-              id="pass"
-              name="pass"
-              value={formData.pass}
+              type="password" id="pass" name="pass" value={formData.pass}
               onChange={handleFormChange}
-              required
+              required={!editingUser}
+              placeholder={editingUser ? 'Deixe em branco para não alterar' : ''}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
             />
           </div>
           <div>
             <label htmlFor="role" className="block text-sm font-medium text-gray-300 mb-1">Função</label>
             <select 
-              id="role" 
-              name="role" 
-              value={formData.role} 
+              id="role" name="role" value={formData.role} 
               onChange={handleFormChange} 
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
             >
@@ -172,12 +265,24 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
               <option value="admin">Admin</option>
             </select>
           </div>
+           {formData.role === 'user' && (
+              <div>
+                <label htmlFor="paymentDueDate" className="block text-sm font-medium text-gray-300 mb-1">Data de Vencimento</label>
+                <input
+                  type="date" id="paymentDueDate" name="paymentDueDate"
+                  value={formData.paymentDueDate || ''}
+                  onChange={handleFormChange}
+                  required
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+            )}
           <div className="mt-6 flex justify-end space-x-4 pt-4">
-            <button type="button" onClick={handleCloseAddModal} className="px-4 py-2 rounded-md text-gray-200 bg-gray-600 hover:bg-gray-500 transition-colors">
+            <button type="button" onClick={handleCloseModal} className="px-4 py-2 rounded-md text-gray-200 bg-gray-600 hover:bg-gray-500 transition-colors">
               Cancelar
             </button>
             <button type="submit" className="px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors">
-              Criar Usuário
+              {editingUser ? 'Salvar Alterações' : 'Criar Usuário'}
             </button>
           </div>
         </form>
