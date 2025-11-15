@@ -71,4 +71,4 @@ export interface SiteSettings {
   loginImageUrl: string | null;
 }
 
-export type View = 'dashboard' | 'schedule' | 'announcements' | 'store' | 'booking' | 'promotions' | 'settings';
+export type View = 'dashboard' | 'schedule' | 'announcements' | 'store' | 'booking' | 'promotions' | 'settings' | 'userManagement';

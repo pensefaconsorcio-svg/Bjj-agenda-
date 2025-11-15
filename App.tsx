@@ -10,6 +10,7 @@ import BookingView from './components/BookingView';
 import DashboardView from './components/DashboardView';
 import PromotionsView from './components/PromotionsView';
 import SiteSettingsView from './components/SiteSettingsView';
+import UserManagementView from './components/UserManagementView';
 import CartModal from './components/CartModal';
 import CheckoutModal from './components/CheckoutModal';
 import { type View, type Product, type User, type ClassSession, type Booking, type Announcement, type PromotionPlan, type SiteSettings, type TatameArea, type CartItem } from './types';
@@ -198,6 +199,7 @@ const viewTitles: Record<View, string> = {
   booking: 'Reservar Tatame',
   promotions: 'Promoções e Planos',
   settings: 'Configurações da Academia',
+  userManagement: 'Gerenciamento de Usuários',
 };
 
 const PageHeader: React.FC<{ 
@@ -311,6 +313,38 @@ const App: React.FC = () => {
     setCurrentUser(newUser);
     setCurrentView('dashboard');
     return newUser;
+  };
+
+  // User Management by Admin
+  const handleCreateUser = (newUserData: { email: string; pass: string; role: 'admin' | 'user' }): boolean => {
+    if (users.some(u => u.email === newUserData.email)) {
+      alert('Este e-mail já está cadastrado.');
+      return false;
+    }
+    const newUser: User = {
+      id: Date.now(),
+      email: newUserData.email,
+      role: newUserData.role,
+    };
+    setUsers(prev => [...prev, newUser]);
+    setCredentials(prev => ({ ...prev, [newUserData.email]: newUserData.pass }));
+    return true;
+  };
+  
+  const handleDeleteUser = (userId: number) => {
+    if (userId === currentUser?.id) {
+        alert('Você não pode excluir sua própria conta.');
+        return;
+    }
+    const userToDelete = users.find(u => u.id === userId);
+    if(userToDelete) {
+        setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
+        setCredentials(prevCreds => {
+            const newCreds = { ...prevCreds };
+            delete newCreds[userToDelete.email];
+            return newCreds;
+        });
+    }
   };
 
   const handleLogout = () => {
@@ -554,6 +588,13 @@ const App: React.FC = () => {
         return <SiteSettingsView
                   currentSettings={siteSettings}
                   onSave={handleUpdateSiteSettings}
+                />;
+      case 'userManagement':
+        return <UserManagementView
+                  users={users}
+                  currentUser={currentUser!}
+                  onCreateUser={handleCreateUser}
+                  onDeleteUser={handleDeleteUser}
                 />;
       default:
         return <DashboardView 
