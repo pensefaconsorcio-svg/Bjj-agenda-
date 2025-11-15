@@ -74,7 +74,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onRegister, siteSettings
             {/* Left side with image */}
             <div className="hidden lg:flex w-1/2 bg-gray-800 items-center justify-center relative">
                 <img 
-                    src={siteSettings.loginImageUrl || "https://images.unsplash.com/photo-1598971457999-ca4ef48a9a71?q=80&w=2583&auto=format&fit=crop"} 
+                    src={siteSettings.loginImageUrl || "https://images.unsplash.com/photo-1603525281789-b5f3a1f1a1d3?q=80&w=2574&auto=format&fit=crop"} 
                     alt="Jiu-Jitsu training" 
                     className="absolute h-full w-full object-cover opacity-20" 
                 />
