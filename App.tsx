@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Header'; // Using Header file for Sidebar component
 import ScheduleView from './components/ScheduleView';
@@ -636,7 +637,6 @@ const App: React.FC = () => {
   if (!currentUser) {
     return <LoginView 
             onLogin={handleLogin} 
-            onRegister={handleRegister} 
             siteSettings={siteSettings} 
           />;
   }
