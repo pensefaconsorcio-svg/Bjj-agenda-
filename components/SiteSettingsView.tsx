@@ -96,6 +96,18 @@ const SiteSettingsView: React.FC<SiteSettingsViewProps> = ({ currentSettings, on
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent" 
               />
             </div>
+            <div>
+              <label htmlFor="whatsappUrl" className="block text-sm font-medium text-gray-300 mb-1">URL do WhatsApp</label>
+              <input 
+                type="url" 
+                id="whatsappUrl" 
+                name="whatsappUrl" 
+                value={settings.whatsappUrl} 
+                onChange={handleChange} 
+                placeholder="https://wa.me/5511999999999"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent" 
+              />
+            </div>
           </div>
 
           {/* Payment Settings */}

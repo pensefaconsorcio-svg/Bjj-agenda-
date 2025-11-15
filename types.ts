@@ -67,6 +67,7 @@ export interface SiteSettings {
   instagramUrl: string;
   facebookUrl: string;
   xUrl: string;
+  whatsappUrl: string;
   pixKey: string;
   paymentInstructions: string;
   logoUrl: string | null;

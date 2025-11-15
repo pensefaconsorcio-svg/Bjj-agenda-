@@ -174,6 +174,7 @@ const initialSiteSettings: SiteSettings = {
   instagramUrl: '#',
   facebookUrl: '#',
   xUrl: '#',
+  whatsappUrl: '#',
   pixKey: 'chave-pix-aleatoria-exemplo@banco.com',
   paymentInstructions: 'Após o pagamento, por favor envie o comprovante para o nosso WhatsApp: (XX) 9XXXX-XXXX para confirmarmos seu pedido.',
   logoUrl: null,

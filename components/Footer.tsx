@@ -2,6 +2,7 @@ import React from 'react';
 import { InstagramIcon } from './icons/InstagramIcon';
 import { FacebookIcon } from './icons/FacebookIcon';
 import { XIcon } from './icons/XIcon';
+import { WhatsappIcon } from './icons/WhatsappIcon';
 import { type SiteSettings } from '../types';
 
 interface FooterProps {
@@ -16,6 +17,7 @@ const Footer: React.FC<FooterProps> = ({ siteSettings }) => {
           <a href={siteSettings.instagramUrl} target="_blank" rel="noopener noreferrer" className="hover:text-red-500 transition-colors duration-200"><InstagramIcon /></a>
           <a href={siteSettings.facebookUrl} target="_blank" rel="noopener noreferrer" className="hover:text-red-500 transition-colors duration-200"><FacebookIcon /></a>
           <a href={siteSettings.xUrl} target="_blank" rel="noopener noreferrer" className="hover:text-red-500 transition-colors duration-200"><XIcon /></a>
+          <a href={siteSettings.whatsappUrl} target="_blank" rel="noopener noreferrer" className="hover:text-red-500 transition-colors duration-200"><WhatsappIcon /></a>
         </div>
         <p className="text-sm">&copy; {new Date().getFullYear()} {siteSettings.academyName}. Todos os direitos reservados.</p>
       </div>
