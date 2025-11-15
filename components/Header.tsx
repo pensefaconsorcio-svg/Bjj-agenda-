@@ -9,7 +9,6 @@ import { StoreIcon } from './icons/StoreIcon';
 import { LogoutIcon } from './icons/LogoutIcon';
 import { TagIcon } from './icons/TagIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
-import { UsersIcon } from './icons/UsersIcon';
 import { ChevronDoubleLeftIcon } from './icons/ChevronDoubleLeftIcon';
 
 interface SidebarProps {
@@ -79,7 +78,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         {user.role === 'admin' && (
           <>
             <NavItem view="settings" currentView={currentView} setCurrentView={setCurrentView} icon={<SettingsIcon />} label="Configurações" isCollapsed={isCollapsed} />
-            <NavItem view="userManagement" currentView={currentView} setCurrentView={setCurrentView} icon={<UsersIcon />} label="Gerenciar Usuários" isCollapsed={isCollapsed} />
           </>
         )}
       </nav>

@@ -10,7 +10,6 @@ import BookingView from './components/BookingView';
 import DashboardView from './components/DashboardView';
 import PromotionsView from './components/PromotionsView';
 import SiteSettingsView from './components/SiteSettingsView';
-import UserManagementView from './components/UserManagementView';
 import CartModal from './components/CartModal';
 import CheckoutModal from './components/CheckoutModal';
 import { type View, type Product, type User, type ClassSession, type Booking, type Announcement, type PromotionPlan, type SiteSettings, type TatameArea, type CartItem } from './types';
@@ -182,7 +181,6 @@ const viewTitles: Record<View, string> = {
   booking: 'Reservar Tatame',
   promotions: 'Promoções e Planos',
   settings: 'Configurações da Academia',
-  userManagement: 'Gerenciar Usuários',
 };
 
 const PageHeader: React.FC<{ 
@@ -297,38 +295,6 @@ const App: React.FC = () => {
     setCurrentView('dashboard');
     return newUser;
   };
-
-  const handleCreateUserByAdmin = (newUserData: { email: string; pass: string; role: 'admin' | 'user' }): boolean => {
-    if (users.some(u => u.email === newUserData.email)) {
-      alert('Este e-mail já está cadastrado.');
-      return false;
-    }
-    const newUser: User = {
-      id: Date.now(),
-      email: newUserData.email,
-      role: newUserData.role,
-    };
-    setUsers(prev => [...prev, newUser]);
-    setCredentials(prev => ({ ...prev, [newUserData.email]: newUserData.pass }));
-    return true;
-  };
-
-  const handleDeleteUserByAdmin = (userId: number) => {
-    if (userId === currentUser?.id) {
-        alert("Você não pode excluir sua própria conta.");
-        return;
-    }
-    const userToDelete = users.find(u => u.id === userId);
-    if (userToDelete) {
-      setUsers(prev => prev.filter(u => u.id !== userId));
-      setCredentials(prev => {
-        const newCreds = { ...prev };
-        delete newCreds[userToDelete.email];
-        return newCreds;
-      });
-    }
-  };
-
 
   const handleLogout = () => {
     setCurrentUser(null);
@@ -571,13 +537,6 @@ const App: React.FC = () => {
         return <SiteSettingsView
                   currentSettings={siteSettings}
                   onSave={handleUpdateSiteSettings}
-                />;
-      case 'userManagement':
-        return <UserManagementView
-                  users={users}
-                  currentUser={currentUser!}
-                  onCreateUser={handleCreateUserByAdmin}
-                  onDeleteUser={handleDeleteUserByAdmin}
                 />;
       default:
         return <DashboardView 
