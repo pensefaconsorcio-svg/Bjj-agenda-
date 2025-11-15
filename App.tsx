@@ -23,10 +23,16 @@ const getInitialState = <T extends object | boolean | string | number>(key: stri
         if (storedValue) {
             const parsed = JSON.parse(storedValue);
             
+            // FIX: Handle type mismatches for primitive types stored in localStorage.
             // Handle simple boolean/string values
             if (typeof parsed !== 'object' || parsed === null) {
-                return parsed;
+                if (typeof parsed === typeof defaultValue) {
+                    return parsed;
+                }
+                // If types don't match, fall back to the default value.
+                return defaultValue;
             }
+            // From here on, we know `parsed` is an object or array.
 
             // Specific migration for paymentLink -> pixKey
             if (key === 'bjjagenda-siteSettings' && parsed.paymentLink) {
@@ -42,11 +48,22 @@ const getInitialState = <T extends object | boolean | string | number>(key: stri
                     parsed.loginImageUrl = null;
                 }
             }
+
+            // If default is an array, we expect parsed to be an array. Don't merge.
+            if (Array.isArray(defaultValue)) {
+                // FIX: Cast `parsed` to `T` to resolve the TypeScript error. This trusts that the
+                // data from localStorage has the correct array element type.
+                return Array.isArray(parsed) ? (parsed as T) : defaultValue;
+            }
             
+            // For objects, merge to inherit new properties from default.
             if (typeof defaultValue === 'object' && defaultValue !== null) {
                  return { ...defaultValue, ...parsed };
             }
-            return parsed;
+
+            // FIX: If `parsed` is an object but `defaultValue` is a primitive, there's a
+            // type mismatch in localStorage. Return the default value to avoid runtime errors.
+            return defaultValue;
         }
         return defaultValue;
     } catch (error) {
