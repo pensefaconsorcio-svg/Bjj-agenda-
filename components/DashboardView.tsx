@@ -3,6 +3,7 @@ import { type User, type ClassSession, type Announcement, type Booking, type Vie
 import { ClockIcon } from './icons/ClockIcon';
 import { BellIcon } from './icons/BellIcon';
 import { BookmarkIcon } from './icons/BookmarkIcon';
+import { AlertTriangleIcon } from './icons/AlertTriangleIcon';
 
 interface DashboardViewProps {
   user: User;
@@ -51,12 +52,75 @@ const DashboardView: React.FC<DashboardViewProps> = ({ user, classes, announceme
   const latestAnnouncement = announcements[0];
   const myUpcomingBookings = bookings.filter(b => b.userId === user.id && new Date(b.date) >= new Date(new Date().toDateString())).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
+  const renderPaymentReminder = () => {
+    if (user.role !== 'user' || !user.paymentDueDate) {
+      return null;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDate = new Date(user.paymentDueDate + 'T00:00:00');
+    
+    const diffTime = dueDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    let reminder = null;
+    if (diffDays <= 7) {
+      if (diffDays < 0) {
+        reminder = {
+          message: `Sua mensalidade venceu há ${Math.abs(diffDays)} dia(s). Renove para continuar treinando.`,
+          color: 'red'
+        };
+      } else if (diffDays === 0) {
+        reminder = {
+          message: 'Sua mensalidade vence hoje! Renove para evitar interrupções.',
+          color: 'yellow'
+        };
+      } else {
+        reminder = {
+          message: `Atenção! Sua mensalidade vence em ${diffDays} dia(s).`,
+          color: 'yellow'
+        };
+      }
+    }
+
+    if (!reminder) {
+      return null;
+    }
+
+    const baseClasses = "border rounded-xl p-4 flex items-center justify-between space-x-4";
+    const colorClasses = reminder.color === 'red' 
+      ? "bg-red-900/50 border-red-700 text-red-200"
+      : "bg-yellow-900/50 border-yellow-700 text-yellow-200";
+
+    return (
+      <div className={`${baseClasses} ${colorClasses}`}>
+        <div className="flex items-center space-x-3">
+          <AlertTriangleIcon className={reminder.color === 'red' ? 'text-red-400' : 'text-yellow-400'} />
+          <p className="font-medium">{reminder.message}</p>
+        </div>
+        <button 
+          onClick={() => setCurrentView('promotions')}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
+            reminder.color === 'red' 
+              ? 'bg-red-600 text-white hover:bg-red-700'
+              : 'bg-yellow-500 text-yellow-900 hover:bg-yellow-600'
+          }`}
+        >
+          Renovar Agora
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div className="animate-fade-in-up space-y-10">
       <div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-gray-100">Bem-vindo(a) de volta, <span className="text-red-500">{user.email.split('@')[0]}</span>!</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-100">Bem-vindo(a) de volta, <span className="text-red-500">{user.name}</span>!</h1>
         <p className="mt-2 text-lg text-gray-400">Aqui está um resumo da sua semana na academia.</p>
       </div>
+      
+      {renderPaymentReminder()}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         

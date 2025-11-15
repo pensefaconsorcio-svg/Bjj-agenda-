@@ -601,7 +601,7 @@ const App: React.FC = () => {
         return <PromotionsView 
                   user={currentUser!}
                   plans={promotions}
-                  paymentLink={siteSettings.pixKey}
+                  siteSettings={siteSettings}
                   onAddPlan={handleAddPromotion}
                   onUpdatePlan={handleUpdatePromotion}
                   onDeletePlan={handleDeletePromotion}

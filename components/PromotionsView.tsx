@@ -1,14 +1,78 @@
+
 import React, { useState, useEffect } from 'react';
-import { type PromotionPlan, type User } from '../types';
+import { type PromotionPlan, type User, type SiteSettings } from '../types';
 import Modal from './Modal';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { EditIcon } from './icons/EditIcon';
 import { TrashIcon } from './icons/TrashIcon';
+import { ClipboardCopyIcon } from './icons/ClipboardCopyIcon';
+import { CheckCircleIcon } from './icons/CheckCircleIcon';
+
+interface SubscriptionPaymentModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  plan: PromotionPlan | null;
+  settings: SiteSettings;
+}
+
+const SubscriptionPaymentModal: React.FC<SubscriptionPaymentModalProps> = ({ isOpen, onClose, plan, settings }) => {
+  const [copied, setCopied] = useState(false);
+
+  if (!isOpen || !plan) return null;
+
+  const total = plan.total ?? plan.price;
+  
+  const handleCopy = () => {
+    if (settings.pixKey) {
+        navigator.clipboard.writeText(settings.pixKey);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={`Pagar ${plan.name}`}>
+      <div className="space-y-4">
+        <div>
+          <p className="text-gray-300 text-sm">Valor total do plano:</p>
+          <p className="text-3xl font-bold text-red-500">R$ {total.toFixed(2)}</p>
+        </div>
+        
+        <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
+          <p className="text-sm font-medium text-gray-300 mb-1">Chave PIX:</p>
+          <div className="flex items-center justify-between bg-gray-700 p-2 rounded-md">
+            <p className="font-mono text-gray-100 truncate pr-2" title={settings.pixKey}>{settings.pixKey || "Não configurada"}</p>
+            <button 
+              onClick={handleCopy}
+              disabled={!settings.pixKey || copied}
+              className="flex items-center space-x-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-md transition-all shadow-sm disabled:bg-gray-500 disabled:cursor-not-allowed"
+            >
+              {copied ? <CheckCircleIcon/> : <ClipboardCopyIcon/>}
+              <span>{copied ? 'Copiado!' : 'Copiar'}</span>
+            </button>
+          </div>
+        </div>
+
+        <div>
+           <p className="text-sm font-medium text-gray-300 mb-1">Instruções:</p>
+           <p className="text-gray-400 text-sm whitespace-pre-wrap">{settings.paymentInstructions || "Contate a academia para finalizar o pagamento."}</p>
+        </div>
+
+        <div className="mt-6 flex justify-end">
+            <button onClick={onClose} className="px-6 py-2 rounded-md text-gray-200 bg-gray-600 hover:bg-gray-500 transition-colors">
+                Fechar
+            </button>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
 
 interface PromotionsViewProps {
   user: User;
   plans: PromotionPlan[];
-  paymentLink: string;
+  siteSettings: SiteSettings;
   onAddPlan: (plan: Omit<PromotionPlan, 'id'>) => void;
   onUpdatePlan: (plan: PromotionPlan) => void;
   onDeletePlan: (planId: number) => void;
@@ -29,11 +93,12 @@ const Checkmark: React.FC = () => (
     </svg>
 )
 
-const PromotionsView: React.FC<PromotionsViewProps> = ({ user, plans, paymentLink, onAddPlan, onUpdatePlan, onDeletePlan }) => {
+const PromotionsView: React.FC<PromotionsViewProps> = ({ user, plans, siteSettings, onAddPlan, onUpdatePlan, onDeletePlan }) => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<PromotionPlan | null>(null);
   const [formData, setFormData] = useState<Omit<PromotionPlan, 'id'>>(initialFormState);
   const [featuresString, setFeaturesString] = useState('');
+  const [selectedPlan, setSelectedPlan] = useState<PromotionPlan | null>(null);
 
   const isAdmin = user.role === 'admin';
 
@@ -92,12 +157,8 @@ const PromotionsView: React.FC<PromotionsViewProps> = ({ user, plans, paymentLin
     }
   };
   
-  const handleSubscribeClick = () => {
-    if (paymentLink) {
-        window.open(paymentLink, '_blank', 'noopener,noreferrer');
-    } else {
-        alert('O link de pagamento não foi configurado pelo administrador.');
-    }
+  const handleSubscribeClick = (plan: PromotionPlan) => {
+    setSelectedPlan(plan);
   };
 
   return (
@@ -163,7 +224,7 @@ const PromotionsView: React.FC<PromotionsViewProps> = ({ user, plans, paymentLin
               </ul>
               
               <button
-                onClick={handleSubscribeClick}
+                onClick={() => handleSubscribeClick(plan)}
                 className={`mt-10 w-full py-3 px-6 rounded-lg font-semibold text-white transition-colors ${
                   plan.isBestValue 
                     ? 'bg-red-600 hover:bg-red-700' 
@@ -195,6 +256,13 @@ const PromotionsView: React.FC<PromotionsViewProps> = ({ user, plans, paymentLin
           </div>
         </form>
       </Modal>
+
+      <SubscriptionPaymentModal
+        isOpen={!!selectedPlan}
+        onClose={() => setSelectedPlan(null)}
+        plan={selectedPlan}
+        settings={siteSettings}
+      />
     </>
   );
 };
