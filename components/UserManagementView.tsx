@@ -9,7 +9,7 @@ import { EditIcon } from './icons/EditIcon';
 interface UserManagementViewProps {
   users: User[];
   currentUser: User;
-  onCreateUser: (userData: { email: string; pass: string; role: 'admin' | 'user'; name: string; paymentDueDate: string | null }) => boolean;
+  onCreateUser: (userData: { email: string; pass: string; role: 'admin' | 'user' | 'mestre'; name: string; paymentDueDate: string | null }) => boolean;
   onUpdateUser: (userData: User & { pass?: string }) => void;
   onDeleteUser: (userId: number) => void;
 }
@@ -18,7 +18,7 @@ type FormData = {
   name: string;
   email: string;
   pass: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'user' | 'mestre';
   paymentDueDate: string | null;
 }
 
@@ -98,7 +98,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
        if (formData.email && formData.pass) {
           const success = onCreateUser({
             ...formData, 
-            paymentDueDate: formData.role === 'admin' ? null : formData.paymentDueDate
+            paymentDueDate: formData.role === 'user' ? formData.paymentDueDate : null
           });
           if (success) {
             handleCloseModal();
@@ -142,6 +142,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
             <tbody className="divide-y divide-gray-700">
               {users.map(user => {
                   const paymentStatus = getPaymentStatus(user.paymentDueDate);
+                  const canMestreAct = currentUser.role === 'mestre' && user.role !== 'user';
                   return (
                     <tr key={user.id} className="hover:bg-gray-700/50">
                       <td className="p-4">
@@ -159,26 +160,30 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
                       <td className="p-4">
                         <span className={`px-2 py-1 text-xs font-bold rounded-full ${
                           user.role === 'admin' 
-                          ? 'bg-red-300 text-red-900' 
+                          ? 'bg-red-300 text-red-900'
+                          : user.role === 'mestre'
+                          ? 'bg-blue-300 text-blue-900'
                           : 'bg-gray-600 text-gray-200'
                         }`}>
-                          {user.role === 'admin' ? 'Admin' : 'Usuário'}
+                          {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                         </span>
                       </td>
                       <td className="p-4 text-right">
                          <button
                             onClick={() => handleOpenEditModal(user)}
-                            className="p-2 mr-2 text-gray-400 hover:text-red-500 rounded-full transition-colors"
+                            disabled={canMestreAct}
+                            className="p-2 mr-2 text-gray-400 hover:text-red-500 rounded-full transition-colors disabled:text-gray-600 disabled:cursor-not-allowed"
                             aria-label={`Editar usuário ${user.name}`}
+                            title={canMestreAct ? 'Permissão negada' : `Editar usuário ${user.name}`}
                           >
                             <EditIcon />
                           </button>
                         <button
                           onClick={() => setUserToDelete(user)}
-                          disabled={user.id === currentUser.id}
+                          disabled={user.id === currentUser.id || canMestreAct}
                           className="p-2 text-gray-400 hover:text-red-500 rounded-full transition-colors disabled:text-gray-600 disabled:cursor-not-allowed"
                           aria-label={`Excluir usuário ${user.name}`}
-                          title={user.id === currentUser.id ? 'Não é possível excluir a si mesmo' : 'Excluir usuário'}
+                          title={user.id === currentUser.id ? 'Não é possível excluir a si mesmo' : canMestreAct ? 'Permissão negada' : 'Excluir usuário'}
                         >
                           <TrashIcon />
                         </button>
@@ -259,10 +264,16 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
             <select 
               id="role" name="role" value={formData.role} 
               onChange={handleFormChange} 
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+              disabled={currentUser.role === 'mestre'}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-800 disabled:cursor-not-allowed"
             >
               <option value="user">Usuário</option>
-              <option value="admin">Admin</option>
+              {currentUser.role === 'admin' && (
+                <>
+                  <option value="admin">Admin</option>
+                  <option value="mestre">Mestre</option>
+                </>
+              )}
             </select>
           </div>
            {formData.role === 'user' && (

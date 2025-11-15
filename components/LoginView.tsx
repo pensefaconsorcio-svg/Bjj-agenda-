@@ -119,6 +119,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onRegister, siteSettings
                                 <div className="text-xs text-gray-400 mt-2 p-3 bg-gray-800 rounded-md border border-gray-700">
                                     <p className="font-semibold text-gray-200">Credenciais de teste:</p>
                                     <p>Admin: <span className="font-mono text-gray-100">admin@bjj.com</span> / <span className="font-mono text-gray-100">admin123</span></p>
+                                    <p>Mestre: <span className="font-mono text-gray-100">mestre@bjj.com</span> / <span className="font-mono text-gray-100">mestre123</span></p>
                                     <p>Usuário: <span className="font-mono text-gray-100">user@bjj.com</span> / <span className="font-mono text-gray-100">user123</span></p>
                                 </div>
                                 <div>

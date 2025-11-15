@@ -76,11 +76,11 @@ const Sidebar: React.FC<SidebarProps> = ({
         <NavItem view="booking" currentView={currentView} setCurrentView={setCurrentView} icon={<TatameIcon />} label="Reservar Tatame" isCollapsed={isCollapsed} />
         <NavItem view="store" currentView={currentView} setCurrentView={setCurrentView} icon={<StoreIcon />} label="Loja" isCollapsed={isCollapsed} />
         <NavItem view="promotions" currentView={currentView} setCurrentView={setCurrentView} icon={<TagIcon />} label="Promoções" isCollapsed={isCollapsed} />
+        {(user.role === 'admin' || user.role === 'mestre') && (
+          <NavItem view="userManagement" currentView={currentView} setCurrentView={setCurrentView} icon={<UsersIcon />} label="Usuários" isCollapsed={isCollapsed} />
+        )}
         {user.role === 'admin' && (
-          <>
-            <NavItem view="userManagement" currentView={currentView} setCurrentView={setCurrentView} icon={<UsersIcon />} label="Usuários" isCollapsed={isCollapsed} />
-            <NavItem view="settings" currentView={currentView} setCurrentView={setCurrentView} icon={<SettingsIcon />} label="Configurações" isCollapsed={isCollapsed} />
-          </>
+          <NavItem view="settings" currentView={currentView} setCurrentView={setCurrentView} icon={<SettingsIcon />} label="Configurações" isCollapsed={isCollapsed} />
         )}
       </nav>
 
@@ -90,6 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               {user.email}
             </span>
             {user.role === 'admin' && <span className={`mt-1 text-xs font-semibold bg-red-200 text-red-800 px-2 py-0.5 rounded-full inline-block ${isCollapsed ? 'px-1' : ''}`}>{isCollapsed ? 'A' : 'Admin'}</span>}
+            {user.role === 'mestre' && <span className={`mt-1 text-xs font-semibold bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full inline-block ${isCollapsed ? 'px-1' : ''}`}>{isCollapsed ? 'M' : 'Mestre'}</span>}
         </div>
         <button 
           onClick={onLogout} 

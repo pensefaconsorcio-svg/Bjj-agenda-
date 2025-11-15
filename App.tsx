@@ -184,11 +184,13 @@ const initialSiteSettings: SiteSettings = {
 const initialUsers: User[] = [
     { id: 1, email: 'admin@bjj.com', name: 'Administrador', role: 'admin', paymentDueDate: null },
     { id: 2, email: 'user@bjj.com', name: 'Aluno Exemplo', role: 'user', paymentDueDate: '2024-08-15' },
+    { id: 3, email: 'mestre@bjj.com', name: 'Mestre Academia', role: 'mestre', paymentDueDate: null },
 ];
 
 const initialCredentials: { [email: string]: string } = {
     'admin@bjj.com': 'admin123',
     'user@bjj.com': 'user123',
+    'mestre@bjj.com': 'mestre123',
 };
 
 
@@ -323,7 +325,7 @@ const App: React.FC = () => {
   };
 
   // User Management by Admin
-  const handleCreateUser = (newUserData: { email: string; pass: string; role: 'admin' | 'user'; name: string; paymentDueDate: string | null }): boolean => {
+  const handleCreateUser = (newUserData: { email: string; pass: string; role: 'admin' | 'user' | 'mestre'; name: string; paymentDueDate: string | null }): boolean => {
     if (users.some(u => u.email === newUserData.email)) {
       alert('Este e-mail já está cadastrado.');
       return false;
@@ -333,7 +335,7 @@ const App: React.FC = () => {
       email: newUserData.email,
       name: newUserData.name,
       role: newUserData.role,
-      paymentDueDate: newUserData.role === 'admin' ? null : newUserData.paymentDueDate,
+      paymentDueDate: newUserData.role === 'user' ? newUserData.paymentDueDate : null,
     };
     setUsers(prev => [...prev, newUser]);
     setCredentials(prev => ({ ...prev, [newUserData.email]: newUserData.pass }));
