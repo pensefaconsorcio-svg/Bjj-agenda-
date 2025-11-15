@@ -4,6 +4,7 @@ import { ClockIcon } from './icons/ClockIcon';
 import { BellIcon } from './icons/BellIcon';
 import { BookmarkIcon } from './icons/BookmarkIcon';
 import { AlertTriangleIcon } from './icons/AlertTriangleIcon';
+import { CheckCircleIcon } from './icons/CheckCircleIcon';
 
 interface DashboardViewProps {
   user: User;
@@ -64,50 +65,71 @@ const DashboardView: React.FC<DashboardViewProps> = ({ user, classes, announceme
     const diffTime = dueDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    let reminder = null;
-    if (diffDays <= 7) {
-      if (diffDays < 0) {
-        reminder = {
-          message: `Sua mensalidade venceu há ${Math.abs(diffDays)} dia(s). Renove para continuar treinando.`,
-          color: 'red'
-        };
-      } else if (diffDays === 0) {
+    let reminder: {
+      message: string;
+      color: 'red' | 'yellow' | 'green';
+      buttonText: string;
+    };
+
+    if (diffDays < 0) {
+      reminder = {
+        message: `Sua mensalidade venceu há ${Math.abs(diffDays)} dia(s).`,
+        color: 'red',
+        buttonText: 'Renovar Agora'
+      };
+    } else if (diffDays <= 3) {
+      if (diffDays === 0) {
         reminder = {
           message: 'Sua mensalidade vence hoje! Renove para evitar interrupções.',
-          color: 'yellow'
+          color: 'yellow',
+          buttonText: 'Renovar Agora'
         };
       } else {
         reminder = {
           message: `Atenção! Sua mensalidade vence em ${diffDays} dia(s).`,
-          color: 'yellow'
+          color: 'yellow',
+          buttonText: 'Renovar Agora'
         };
       }
+    } else { // diffDays > 3
+      reminder = {
+        message: `Sua mensalidade está em dia. Próximo vencimento em ${diffDays} dias.`,
+        color: 'green',
+        buttonText: 'Renovar Plano'
+      };
     }
 
-    if (!reminder) {
-      return null;
-    }
+    const colorConfig = {
+      red: {
+        container: "bg-red-900/50 border-red-700 text-red-200",
+        button: "bg-red-600 text-white hover:bg-red-700",
+        icon: <AlertTriangleIcon className="text-red-400 h-6 w-6" />
+      },
+      yellow: {
+        container: "bg-yellow-900/50 border-yellow-700 text-yellow-200",
+        button: "bg-yellow-500 text-yellow-900 hover:bg-yellow-600",
+        icon: <AlertTriangleIcon className="text-yellow-400 h-6 w-6" />
+      },
+      green: {
+        container: "bg-green-900/50 border-green-700 text-green-200",
+        button: "bg-green-600 text-white hover:bg-green-700",
+        icon: <CheckCircleIcon className="text-green-400 h-6 w-6" />
+      }
+    };
 
-    const baseClasses = "border rounded-xl p-4 flex items-center justify-between space-x-4";
-    const colorClasses = reminder.color === 'red' 
-      ? "bg-red-900/50 border-red-700 text-red-200"
-      : "bg-yellow-900/50 border-yellow-700 text-yellow-200";
+    const currentColors = colorConfig[reminder.color];
 
     return (
-      <div className={`${baseClasses} ${colorClasses}`}>
+      <div className={`border rounded-xl p-4 flex items-center justify-between space-x-4 ${currentColors.container}`}>
         <div className="flex items-center space-x-3">
-          <AlertTriangleIcon className={reminder.color === 'red' ? 'text-red-400' : 'text-yellow-400'} />
+          {currentColors.icon}
           <p className="font-medium">{reminder.message}</p>
         </div>
         <button 
           onClick={() => setCurrentView('promotions')}
-          className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
-            reminder.color === 'red' 
-              ? 'bg-red-600 text-white hover:bg-red-700'
-              : 'bg-yellow-500 text-yellow-900 hover:bg-yellow-600'
-          }`}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${currentColors.button}`}
         >
-          Renovar Agora
+          {reminder.buttonText}
         </button>
       </div>
     );
