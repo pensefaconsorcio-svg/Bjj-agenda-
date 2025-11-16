@@ -1,23 +1,23 @@
-
 import React, { useState } from 'react';
-import { type Announcement, type User } from '../types';
+import { type Announcement } from '../types';
 import Modal from './Modal';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { TrashIcon } from './icons/TrashIcon';
-
-interface AnnouncementsViewProps {
-  user: User;
-  announcements: Announcement[];
-  onAddAnnouncement: (announcement: { title: string; content: string }) => void;
-  onDeleteAnnouncement: (announcementId: number) => void;
-}
+import { useAppStore } from '../store';
 
 const initialFormState = {
   title: '',
   content: '',
 };
 
-const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ user, announcements, onAddAnnouncement, onDeleteAnnouncement }) => {
+const AnnouncementsView: React.FC = () => {
+  const { user, announcements, addAnnouncement, deleteAnnouncement } = useAppStore(state => ({
+    user: state.currentUser!,
+    announcements: state.announcements,
+    addAnnouncement: state.addAnnouncement,
+    deleteAnnouncement: state.deleteAnnouncement,
+  }));
+
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [formData, setFormData] = useState(initialFormState);
   const [announcementToDelete, setAnnouncementToDelete] = useState<Announcement | null>(null);
@@ -41,14 +41,14 @@ const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ user, announcemen
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.title && formData.content) {
-      onAddAnnouncement(formData);
+      addAnnouncement(formData);
       handleCloseFormModal();
     }
   };
 
   const handleConfirmDelete = () => {
     if (announcementToDelete) {
-      onDeleteAnnouncement(announcementToDelete.id);
+      deleteAnnouncement(announcementToDelete.id);
       setAnnouncementToDelete(null);
     }
   };

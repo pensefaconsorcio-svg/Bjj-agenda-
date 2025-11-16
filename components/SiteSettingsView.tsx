@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { type SiteSettings } from '../types';
+import { useAppStore } from '../store';
 
-interface SiteSettingsViewProps {
-  currentSettings: SiteSettings;
-  onSave: (newSettings: SiteSettings) => void;
-}
-
-const SiteSettingsView: React.FC<SiteSettingsViewProps> = ({ currentSettings, onSave }) => {
+const SiteSettingsView: React.FC = () => {
+  const { currentSettings, updateSiteSettings } = useAppStore(state => ({
+    currentSettings: state.siteSettings,
+    updateSiteSettings: state.updateSiteSettings,
+  }));
+  
   const [settings, setSettings] = useState<SiteSettings>(currentSettings);
 
   useEffect(() => {
@@ -32,7 +33,7 @@ const SiteSettingsView: React.FC<SiteSettingsViewProps> = ({ currentSettings, on
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(settings);
+    updateSiteSettings(settings);
   };
 
   return (

@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { type View, type User, type SiteSettings } from '../types';
+import { type View } from '../types';
 import { HomeIcon } from './icons/HomeIcon';
 import { CalendarIcon } from './icons/CalendarIcon';
 import { MegaphoneIcon } from './icons/MegaphoneIcon';
@@ -12,18 +11,7 @@ import { SettingsIcon } from './icons/SettingsIcon';
 import { UsersIcon } from './icons/UsersIcon';
 import { FinancialIcon } from './icons/FinancialIcon';
 import { ChevronDoubleLeftIcon } from './icons/ChevronDoubleLeftIcon';
-
-interface SidebarProps {
-  currentView: View;
-  setCurrentView: (view: View) => void;
-  user: User;
-  onLogout: () => void;
-  siteSettings: SiteSettings;
-  isCollapsed: boolean;
-  onToggleCollapse: () => void;
-  isMobileOpen: boolean;
-  onCloseMobile: () => void;
-}
+import { useAppStore } from '../store';
 
 const NavItem: React.FC<{
   view: View;
@@ -50,10 +38,29 @@ const NavItem: React.FC<{
   );
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ 
-  currentView, setCurrentView, user, onLogout, siteSettings, 
-  isCollapsed, onToggleCollapse, isMobileOpen, onCloseMobile 
-}) => {
+const Sidebar: React.FC = () => {
+  const { 
+    currentView, 
+    user, 
+    siteSettings, 
+    isCollapsed, 
+    isMobileOpen, 
+    setCurrentView, 
+    logout, 
+    toggleSidebarCollapse, 
+    closeMobileMenu 
+  } = useAppStore(state => ({
+    currentView: state.currentView,
+    user: state.currentUser!,
+    siteSettings: state.siteSettings,
+    isCollapsed: state.isSidebarCollapsed,
+    isMobileOpen: state.isMobileMenuOpen,
+    setCurrentView: state.setCurrentView,
+    logout: state.logout,
+    toggleSidebarCollapse: state.toggleSidebarCollapse,
+    closeMobileMenu: state.closeMobileMenu,
+  }));
+
   const sidebarContent = (
     <div className="flex flex-col h-full bg-gray-800 border-r border-gray-700 p-4">
       <div 
@@ -97,7 +104,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             {user.role === 'mestre' && <span className={`mt-1 text-xs font-semibold bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full inline-block ${isCollapsed ? 'px-1' : ''}`}>{isCollapsed ? 'M' : 'Mestre'}</span>}
         </div>
         <button 
-          onClick={onLogout} 
+          onClick={logout} 
           className={`mt-3 w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:bg-red-900/50 hover:text-red-400 transition-colors ${isCollapsed ? 'justify-center' : ''}`}
           title={isCollapsed ? 'Sair' : ''}
         >
@@ -105,7 +112,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <span className={`transition-opacity duration-200 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>Sair</span>
         </button>
         <button
-          onClick={onToggleCollapse}
+          onClick={toggleSidebarCollapse}
           className={`hidden lg:flex w-full items-center justify-center mt-3 p-2 text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg transition-colors`}
           title={isCollapsed ? "Expandir menu" : "Recolher menu"}
         >
@@ -124,7 +131,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         {sidebarContent}
       </div>
       {isMobileOpen && (
-        <div className="fixed inset-0 bg-black/60 z-30 lg:hidden" onClick={onCloseMobile}></div>
+        <div className="fixed inset-0 bg-black/60 z-30 lg:hidden" onClick={closeMobileMenu}></div>
       )}
 
       {/* Desktop Sidebar */}

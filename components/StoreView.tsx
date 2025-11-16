@@ -1,20 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
-import { type Product, type User } from '../types';
+import { type Product } from '../types';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { EditIcon } from './icons/EditIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import Modal from './Modal';
 import { ShoppingCartPlusIcon } from './icons/ShoppingCartPlusIcon';
-
-interface StoreViewProps {
-  user: User;
-  products: Product[];
-  onAddProduct: (product: Omit<Product, 'id'>) => void;
-  onUpdateProduct: (product: Product) => void;
-  onDeleteProduct: (productId: number) => void;
-  onAddToCart: (product: Product) => void;
-}
+import { useAppStore } from '../store';
 
 const initialFormState: Omit<Product, 'id'> = {
   name: '',
@@ -23,7 +14,16 @@ const initialFormState: Omit<Product, 'id'> = {
   category: '',
 };
 
-const StoreView: React.FC<StoreViewProps> = ({ user, products, onAddProduct, onUpdateProduct, onDeleteProduct, onAddToCart }) => {
+const StoreView: React.FC = () => {
+  const { user, products, addProduct, updateProduct, deleteProduct, addToCart } = useAppStore(state => ({
+    user: state.currentUser!,
+    products: state.products,
+    addProduct: state.addProduct,
+    updateProduct: state.updateProduct,
+    deleteProduct: state.deleteProduct,
+    addToCart: state.addToCart,
+  }));
+
   // Admin states
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -81,16 +81,16 @@ const StoreView: React.FC<StoreViewProps> = ({ user, products, onAddProduct, onU
       return;
     }
     if (editingProduct) {
-      onUpdateProduct({ ...formData, id: editingProduct.id });
+      updateProduct({ ...formData, id: editingProduct.id });
     } else {
-      onAddProduct(formData);
+      addProduct(formData);
     }
     handleCloseFormModal();
   };
 
   const handleConfirmDelete = () => {
     if (productToDelete) {
-      onDeleteProduct(productToDelete.id);
+      deleteProduct(productToDelete.id);
       setProductToDelete(null);
     }
   };
@@ -130,7 +130,7 @@ const StoreView: React.FC<StoreViewProps> = ({ user, products, onAddProduct, onU
                     </div>
                   ) : (
                     <button 
-                      onClick={() => onAddToCart(product)} 
+                      onClick={() => addToCart(product)} 
                       className="flex items-center justify-center space-x-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 px-3 py-2 rounded-md transition-all shadow-sm"
                       aria-label={`Adicionar ${product.name} ao carrinho`}
                     >

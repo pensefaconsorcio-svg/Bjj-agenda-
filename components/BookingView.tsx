@@ -1,23 +1,12 @@
-
 import React, { useState } from 'react';
-import { type Booking, type User, type TatameArea } from '../types';
+import { type Booking, type TatameArea } from '../types';
 import Modal from './Modal';
 import { TrashIcon } from './icons/TrashIcon';
 import { EditIcon } from './icons/EditIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
 import { XCircleIcon } from './icons/XCircleIcon';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
-
-interface BookingViewProps {
-  user: User;
-  bookings: Booking[];
-  tatameAreas: TatameArea[];
-  onBookTatame: (bookingDetails: Omit<Booking, 'id' | 'userId' | 'userEmail' | 'status'>) => void;
-  onCancelBooking: (bookingId: string) => void;
-  onUpdateBookingStatus: (bookingId: string, action: 'confirm' | 'deny') => void;
-  onUpdateTatameAreas: (updatedAreas: TatameArea[]) => void;
-  onAddTatameArea: (areaData: Omit<TatameArea, 'id'>) => void;
-}
+import { useAppStore } from '../store';
 
 const formatDateForInput = (date: Date): string => {
     return date.toISOString().split('T')[0];
@@ -83,7 +72,27 @@ const TatameAreaEditor: React.FC<{
 };
 
 
-const BookingView: React.FC<BookingViewProps> = ({ user, bookings, tatameAreas, onBookTatame, onCancelBooking, onUpdateBookingStatus, onUpdateTatameAreas, onAddTatameArea }) => {
+const BookingView: React.FC = () => {
+    const { 
+        user, 
+        bookings, 
+        tatameAreas, 
+        bookTatame, 
+        cancelBooking, 
+        updateBookingStatus, 
+        updateTatameAreas, 
+        addTatameArea 
+    } = useAppStore(state => ({
+        user: state.currentUser!,
+        bookings: state.bookings,
+        tatameAreas: state.tatameAreas,
+        bookTatame: state.bookTatame,
+        cancelBooking: state.cancelBooking,
+        updateBookingStatus: state.updateBookingStatus,
+        updateTatameAreas: state.updateTatameAreas,
+        addTatameArea: state.addTatameArea,
+    }));
+    
     const [selectedDate, setSelectedDate] = useState(formatDateForInput(new Date()));
     const [confirmingBooking, setConfirmingBooking] = useState<Omit<Booking, 'id' | 'userId' | 'userEmail' | 'status'> | null>(null);
     const [editingArea, setEditingArea] = useState<TatameArea | null>(null);
@@ -106,18 +115,18 @@ const BookingView: React.FC<BookingViewProps> = ({ user, bookings, tatameAreas, 
     
     const handleCancelClick = (booking: Booking) => {
         if (window.confirm(`Tem certeza que deseja cancelar a reserva para "${booking.tatameName}" no horário ${booking.timeSlot}?`)) {
-            onCancelBooking(booking.id);
+            cancelBooking(booking.id);
         }
     };
     
     const handleSaveArea = (updatedArea: TatameArea) => {
         const newAreas = tatameAreas.map(area => area.id === updatedArea.id ? updatedArea : area);
-        onUpdateTatameAreas(newAreas);
+        updateTatameAreas(newAreas);
     };
 
     const executeBooking = () => {
         if (confirmingBooking) {
-            onBookTatame(confirmingBooking);
+            bookTatame(confirmingBooking);
             setConfirmingBooking(null);
         }
     };
@@ -153,7 +162,7 @@ const BookingView: React.FC<BookingViewProps> = ({ user, bookings, tatameAreas, 
             alert('O nome da área não pode ser vazio.');
             return;
         }
-        onAddTatameArea({ name: newAreaName, timeSlots: newAreaTimeSlots });
+        addTatameArea({ name: newAreaName, timeSlots: newAreaTimeSlots });
         handleCloseAddAreaModal();
     };
     // ------------------------------------------
@@ -223,8 +232,8 @@ const BookingView: React.FC<BookingViewProps> = ({ user, bookings, tatameAreas, 
                                                         isAdminOrMestre ? (
                                                             <>
                                                                 <div className="text-right"><span className="text-sm text-yellow-500 font-semibold truncate" title={booking.userEmail}>{booking.userEmail}</span></div>
-                                                                <button onClick={() => onUpdateBookingStatus(booking.id, 'deny')} className="p-1.5 text-red-500 hover:bg-red-900/50 rounded-full"><XCircleIcon /></button>
-                                                                <button onClick={() => onUpdateBookingStatus(booking.id, 'confirm')} className="p-1.5 text-green-500 hover:bg-green-900/50 rounded-full"><CheckCircleIcon /></button>
+                                                                <button onClick={() => updateBookingStatus(booking.id, 'deny')} className="p-1.5 text-red-500 hover:bg-red-900/50 rounded-full"><XCircleIcon /></button>
+                                                                <button onClick={() => updateBookingStatus(booking.id, 'confirm')} className="p-1.5 text-green-500 hover:bg-green-900/50 rounded-full"><CheckCircleIcon /></button>
                                                             </>
                                                         ) : (
                                                             <>

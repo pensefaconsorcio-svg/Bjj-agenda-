@@ -1,12 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
-import { type PromotionPlan, type User, type SiteSettings } from '../types';
+import { type PromotionPlan, type SiteSettings } from '../types';
 import Modal from './Modal';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { EditIcon } from './icons/EditIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { ClipboardCopyIcon } from './icons/ClipboardCopyIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
+import { SpinnerIcon } from './icons/SpinnerIcon';
+import { useAppStore } from '../store';
 
 interface SubscriptionPaymentModalProps {
   isOpen: boolean;
@@ -17,6 +18,8 @@ interface SubscriptionPaymentModalProps {
 
 const SubscriptionPaymentModal: React.FC<SubscriptionPaymentModalProps> = ({ isOpen, onClose, plan, settings }) => {
   const [copied, setCopied] = useState(false);
+  const { processPlanPayment } = useAppStore();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   if (!isOpen || !plan) return null;
 
@@ -27,6 +30,17 @@ const SubscriptionPaymentModal: React.FC<SubscriptionPaymentModalProps> = ({ isO
         navigator.clipboard.writeText(settings.pixKey);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!plan) return;
+    setIsProcessing(true);
+    try {
+      await processPlanPayment(plan.id);
+      onClose();
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -58,9 +72,20 @@ const SubscriptionPaymentModal: React.FC<SubscriptionPaymentModalProps> = ({ isO
            <p className="text-gray-400 text-sm whitespace-pre-wrap">{settings.paymentInstructions || "Contate a academia para finalizar o pagamento."}</p>
         </div>
 
-        <div className="mt-6 flex justify-end">
-            <button onClick={onClose} className="px-6 py-2 rounded-md text-gray-200 bg-gray-600 hover:bg-gray-500 transition-colors">
+        <div className="mt-6 flex justify-end space-x-3">
+            <button 
+              onClick={onClose} 
+              disabled={isProcessing}
+              className="px-6 py-2 rounded-md text-gray-200 bg-gray-600 hover:bg-gray-500 transition-colors disabled:opacity-50"
+            >
                 Fechar
+            </button>
+             <button 
+                onClick={handleConfirmPayment}
+                disabled={isProcessing}
+                className="flex items-center justify-center w-48 px-6 py-2 rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors disabled:bg-green-800"
+            >
+                {isProcessing ? <SpinnerIcon /> : 'Confirmar Pagamento'}
             </button>
         </div>
       </div>
@@ -68,15 +93,6 @@ const SubscriptionPaymentModal: React.FC<SubscriptionPaymentModalProps> = ({ isO
   );
 };
 
-
-interface PromotionsViewProps {
-  user: User;
-  plans: PromotionPlan[];
-  siteSettings: SiteSettings;
-  onAddPlan: (plan: Omit<PromotionPlan, 'id'>) => void;
-  onUpdatePlan: (plan: PromotionPlan) => void;
-  onDeletePlan: (planId: number) => void;
-}
 
 const initialFormState: Omit<PromotionPlan, 'id'> = {
   name: '',
@@ -93,7 +109,16 @@ const Checkmark: React.FC = () => (
     </svg>
 )
 
-const PromotionsView: React.FC<PromotionsViewProps> = ({ user, plans, siteSettings, onAddPlan, onUpdatePlan, onDeletePlan }) => {
+const PromotionsView: React.FC = () => {
+  const { user, plans, siteSettings, addPromotion, updatePromotion, deletePromotion } = useAppStore(state => ({
+    user: state.currentUser!,
+    plans: state.promotions,
+    siteSettings: state.siteSettings,
+    addPromotion: state.addPromotion,
+    updatePromotion: state.updatePromotion,
+    deletePromotion: state.deletePromotion,
+  }));
+  
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<PromotionPlan | null>(null);
   const [formData, setFormData] = useState<Omit<PromotionPlan, 'id'>>(initialFormState);
@@ -144,16 +169,16 @@ const PromotionsView: React.FC<PromotionsViewProps> = ({ user, plans, siteSettin
     e.preventDefault();
     const finalPlanData = { ...formData, features: featuresString.split(',').map(f => f.trim()).filter(f => f) };
     if (editingPlan) {
-      onUpdatePlan({ ...finalPlanData, id: editingPlan.id });
+      updatePromotion({ ...finalPlanData, id: editingPlan.id });
     } else {
-      onAddPlan(finalPlanData);
+      addPromotion(finalPlanData);
     }
     handleCloseFormModal();
   };
 
   const handleDelete = (planId: number) => {
     if (window.confirm('Tem certeza que deseja excluir este plano?')) {
-      onDeletePlan(planId);
+      deletePromotion(planId);
     }
   };
   

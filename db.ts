@@ -1,5 +1,5 @@
-
-
+// Fix: Use a named import for Dexie to resolve module resolution issues with some TypeScript configurations.
+import { Dexie, type Table } from 'dexie';
 import { type User, type ClassSession, type Announcement, type Product, type CartItem, type Booking, type TatameArea, type PromotionPlan, type SiteSettings, type TransactionCategory, type FinancialTransaction } from './types';
 
 // --- INITIAL DATA ---
@@ -93,125 +93,154 @@ const initialFinancialTransactions: FinancialTransaction[] = [
     { id: 3, description: 'Aluguel do Espaço', amount: 2000, date: '2024-07-05', type: 'expense', categoryId: 3 },
 ];
 
-// --- DATABASE SERVICE ---
+// --- DATABASE SERVICE (DEXIE) ---
 
-const KEYS = {
-  USERS: 'bjjagenda-users',
-  CREDENTIALS: 'bjjagenda-credentials',
-  CLASSES: 'bjjagenda-classes',
-  PRODUCTS: 'bjjagenda-products',
-  ANNOUNCEMENTS: 'bjjagenda-announcements',
-  BOOKINGS: 'bjjagenda-bookings',
-  PROMOTIONS: 'bjjagenda-promotions',
-  SITE_SETTINGS: 'bjjagenda-siteSettings',
-  TATAME_AREAS: 'bjjagenda-tatameAreas',
-  CART: 'bjjagenda-cart',
-  SIDEBAR_COLLAPSED: 'bjjagenda-sidebarCollapsed',
-  FINANCIAL_TRANSACTIONS: 'bjjagenda-financialTransactions',
-  FINANCIAL_CATEGORIES: 'bjjagenda-financialCategories',
-};
+interface Credential {
+  email: string;
+  pass: string;
+}
 
-const get = <T extends object | boolean | string | number>(key: string, defaultValue: T): T => {
-    try {
-        const storedValue = localStorage.getItem(key);
-        if (storedValue) {
-            let parsed = JSON.parse(storedValue);
-            
-            if (typeof parsed !== 'object' || parsed === null) {
-                if (typeof parsed === typeof defaultValue) {
-                    return parsed;
-                }
-                return defaultValue;
-            }
+interface AppState {
+  key: string;
+  value: any;
+}
 
-            if (key === KEYS.SITE_SETTINGS) {
-              if (parsed.paymentLink) {
-                delete parsed.paymentLink;
-              }
-              if (parsed.logoUrl && typeof parsed.logoUrl === 'string' && !parsed.logoUrl.startsWith('data:')) {
-                  parsed.logoUrl = null;
-              }
-              if (parsed.loginImageUrl && typeof parsed.loginImageUrl === 'string' && !parsed.loginImageUrl.startsWith('data:')) {
-                  parsed.loginImageUrl = null;
-              }
-            }
+class BJJAgendaDB extends Dexie {
+  // Fix: Replaced `Dexie.Table` with the imported `Table` type to correctly type the table properties.
+  users!: Table<User, number>;
+  credentials!: Table<Credential, string>;
+  classes!: Table<ClassSession, number>;
+  products!: Table<Product, number>;
+  announcements!: Table<Announcement, number>;
+  bookings!: Table<Booking, string>;
+  promotions!: Table<PromotionPlan, number>;
+  siteSettings!: Table<SiteSettings & { id: number }, number>;
+  tatameAreas!: Table<TatameArea, string>;
+  cart!: Table<CartItem, number>;
+  financialTransactions!: Table<FinancialTransaction, number>;
+  financialCategories!: Table<TransactionCategory, number>;
+  appState!: Table<AppState, string>;
 
-            if (Array.isArray(defaultValue)) {
-                return Array.isArray(parsed) ? (parsed as T) : defaultValue;
-            }
-            
-            if (typeof defaultValue === 'object' && defaultValue !== null) {
-                 return { ...defaultValue, ...parsed };
-            }
+  constructor() {
+    super('BJJAgendaDB');
+    this.version(1).stores({
+      users: '++id, &email',
+      credentials: 'email',
+      classes: '++id',
+      products: '++id',
+      announcements: '++id',
+      bookings: 'id',
+      promotions: '++id',
+      siteSettings: 'id',
+      tatameAreas: 'id',
+      cart: '++id',
+      financialTransactions: '++id',
+      financialCategories: '++id',
+      appState: 'key',
+    });
+  }
+}
 
-            return defaultValue;
-        }
-        return defaultValue;
-    } catch (error) {
-        console.error(`Error reading from localStorage for key ${key}:`, error);
-        return defaultValue;
-    }
-};
+const dexieDB = new BJJAgendaDB();
 
-const save = <T>(key: string, data: T): void => {
+dexieDB.on('populate', async () => {
+  await dexieDB.users.bulkAdd(initialUsers);
+  const creds = Object.entries(initialCredentials).map(([email, pass]) => ({ email, pass }));
+  await dexieDB.credentials.bulkAdd(creds);
+  await dexieDB.classes.bulkAdd(initialClasses);
+  await dexieDB.products.bulkAdd(initialProducts);
+  await dexieDB.announcements.bulkAdd(mockAnnouncements);
+  await dexieDB.promotions.bulkAdd(initialPromotions);
+  await dexieDB.tatameAreas.bulkAdd(initialTatameAreas);
+  await dexieDB.siteSettings.add({ ...initialSiteSettings, id: 1 });
+  await dexieDB.financialTransactions.bulkAdd(initialFinancialTransactions);
+  await dexieDB.financialCategories.bulkAdd(initialFinancialCategories);
+  await dexieDB.appState.add({ key: 'sidebarCollapsed', value: false });
+});
+
+const initDB = async () => {
   try {
-    localStorage.setItem(key, JSON.stringify(data));
+    if (!dexieDB.isOpen()) {
+        await dexieDB.open();
+    }
   } catch (error) {
-    console.error(`Error saving to localStorage for key ${key}:`, error);
+    console.error("Failed to open db:", error);
   }
 };
 
 export const db = {
+  init: initDB,
   users: {
-    getAll: (): User[] => get(KEYS.USERS, initialUsers),
-    saveAll: (data: User[]) => save(KEYS.USERS, data),
+    getAll: () => dexieDB.users.toArray(),
+    add: (user: User) => dexieDB.users.add(user),
+    update: (user: User) => dexieDB.users.put(user),
+    delete: (id: number) => dexieDB.users.delete(id),
   },
   credentials: {
-    getAll: (): { [email: string]: string } => get(KEYS.CREDENTIALS, initialCredentials),
-    saveAll: (data: { [email: string]: string }) => save(KEYS.CREDENTIALS, data),
+    getAll: () => dexieDB.credentials.toArray(),
+    add: (cred: Credential) => dexieDB.credentials.add(cred),
+    update: (cred: Credential) => dexieDB.credentials.put(cred),
+    delete: (email: string) => dexieDB.credentials.delete(email),
   },
   classes: {
-    getAll: (): ClassSession[] => get(KEYS.CLASSES, initialClasses),
-    saveAll: (data: ClassSession[]) => save(KEYS.CLASSES, data),
+    getAll: () => dexieDB.classes.toArray(),
+    add: (data: ClassSession) => dexieDB.classes.add(data),
+    update: (data: ClassSession) => dexieDB.classes.put(data),
+    delete: (id: number) => dexieDB.classes.delete(id),
   },
   products: {
-    getAll: (): Product[] => get(KEYS.PRODUCTS, initialProducts),
-    saveAll: (data: Product[]) => save(KEYS.PRODUCTS, data),
+    getAll: () => dexieDB.products.toArray(),
+    add: (data: Product) => dexieDB.products.add(data),
+    update: (data: Product) => dexieDB.products.put(data),
+    delete: (id: number) => dexieDB.products.delete(id),
   },
   announcements: {
-    getAll: (): Announcement[] => get(KEYS.ANNOUNCEMENTS, mockAnnouncements),
-    saveAll: (data: Announcement[]) => save(KEYS.ANNOUNCEMENTS, data),
+    getAll: () => dexieDB.announcements.toArray(),
+    add: (data: Announcement) => dexieDB.announcements.add(data),
+    delete: (id: number) => dexieDB.announcements.delete(id),
   },
   bookings: {
-    getAll: (): Booking[] => get(KEYS.BOOKINGS, []),
-    saveAll: (data: Booking[]) => save(KEYS.BOOKINGS, data),
+    getAll: () => dexieDB.bookings.toArray(),
+    add: (data: Booking) => dexieDB.bookings.add(data),
+    delete: (id: string) => dexieDB.bookings.delete(id),
+    update: (data: Booking) => dexieDB.bookings.put(data),
   },
   promotions: {
-    getAll: (): PromotionPlan[] => get(KEYS.PROMOTIONS, initialPromotions),
-    saveAll: (data: PromotionPlan[]) => save(KEYS.PROMOTIONS, data),
+    getAll: () => dexieDB.promotions.toArray(),
+    add: (data: PromotionPlan) => dexieDB.promotions.add(data),
+    update: (data: PromotionPlan) => dexieDB.promotions.put(data),
+    delete: (id: number) => dexieDB.promotions.delete(id),
   },
   siteSettings: {
-    getAll: (): SiteSettings => get(KEYS.SITE_SETTINGS, initialSiteSettings),
-    saveAll: (data: SiteSettings) => save(KEYS.SITE_SETTINGS, data),
+    get: async (): Promise<SiteSettings> => (await dexieDB.siteSettings.get(1)) || initialSiteSettings,
+    save: (data: SiteSettings) => dexieDB.siteSettings.put({ ...data, id: 1 }),
   },
   tatameAreas: {
-    getAll: (): TatameArea[] => get(KEYS.TATAME_AREAS, initialTatameAreas),
-    saveAll: (data: TatameArea[]) => save(KEYS.TATAME_AREAS, data),
+    getAll: () => dexieDB.tatameAreas.toArray(),
+    saveAll: (data: TatameArea[]) => dexieDB.tatameAreas.bulkPut(data),
   },
   cart: {
-    getAll: (): CartItem[] => get(KEYS.CART, []),
-    saveAll: (data: CartItem[]) => save(KEYS.CART, data),
+    getAll: () => dexieDB.cart.toArray(),
+    saveAll: (data: CartItem[]) => dexieDB.transaction('rw', dexieDB.cart, async () => {
+        await dexieDB.cart.clear();
+        await dexieDB.cart.bulkAdd(data);
+    }),
   },
   sidebar: {
-    isCollapsed: (): boolean => get(KEYS.SIDEBAR_COLLAPSED, false),
-    saveCollapsed: (data: boolean) => save(KEYS.SIDEBAR_COLLAPSED, data),
+    isCollapsed: async (): Promise<boolean> => {
+        const state = await dexieDB.appState.get('sidebarCollapsed');
+        return state ? state.value : false;
+    },
+    saveCollapsed: (isCollapsed: boolean) => dexieDB.appState.put({ key: 'sidebarCollapsed', value: isCollapsed }),
   },
   financialTransactions: {
-    getAll: (): FinancialTransaction[] => get(KEYS.FINANCIAL_TRANSACTIONS, initialFinancialTransactions),
-    saveAll: (data: FinancialTransaction[]) => save(KEYS.FINANCIAL_TRANSACTIONS, data),
+    getAll: () => dexieDB.financialTransactions.toArray(),
+    add: (data: FinancialTransaction) => dexieDB.financialTransactions.add(data),
+    delete: (id: number) => dexieDB.financialTransactions.delete(id),
   },
   financialCategories: {
-    getAll: (): TransactionCategory[] => get(KEYS.FINANCIAL_CATEGORIES, initialFinancialCategories),
-    saveAll: (data: TransactionCategory[]) => save(KEYS.FINANCIAL_CATEGORIES, data),
+    getAll: () => dexieDB.financialCategories.toArray(),
+    add: (data: TransactionCategory) => dexieDB.financialCategories.add(data),
+    delete: (id: number) => dexieDB.financialCategories.delete(id),
   },
 };

@@ -1,18 +1,11 @@
 import React from 'react';
-import { type User, type ClassSession, type Announcement, type Booking, type View } from '../types';
+import { type ClassSession, type View } from '../types';
 import { ClockIcon } from './icons/ClockIcon';
 import { BellIcon } from './icons/BellIcon';
 import { BookmarkIcon } from './icons/BookmarkIcon';
 import { AlertTriangleIcon } from './icons/AlertTriangleIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
-
-interface DashboardViewProps {
-  user: User;
-  classes: ClassSession[];
-  announcements: Announcement[];
-  bookings: Booking[];
-  setCurrentView: (view: View) => void;
-}
+import { useAppStore } from '../store';
 
 const daysOrder = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 
@@ -48,7 +41,15 @@ const getUpcomingClasses = (classes: ClassSession[]): ClassSession[] => {
 };
 
 
-const DashboardView: React.FC<DashboardViewProps> = ({ user, classes, announcements, bookings, setCurrentView }) => {
+const DashboardView: React.FC = () => {
+  const { user, classes, announcements, bookings, setCurrentView } = useAppStore(state => ({
+    user: state.currentUser!,
+    classes: state.classes,
+    announcements: state.announcements,
+    bookings: state.bookings,
+    setCurrentView: state.setCurrentView,
+  }));
+
   const upcomingClasses = getUpcomingClasses(classes);
   const latestAnnouncement = announcements[0];
   const myUpcomingBookings = bookings.filter(b => b.userId === user.id && new Date(b.date) >= new Date(new Date().toDateString())).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());

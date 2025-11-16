@@ -1,21 +1,12 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
-import { type ClassSession, type User, type SiteSettings } from '../types';
+import { type ClassSession } from '../types';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { EditIcon } from './icons/EditIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import Modal from './Modal';
 import { CalendarPlusIcon } from './icons/CalendarPlusIcon';
 import { ExportIcon } from './icons/ExportIcon';
-
-interface ScheduleViewProps {
-  user: User;
-  classes: ClassSession[];
-  onAddClass: (newClass: Omit<ClassSession, 'id'>) => void;
-  onUpdateClass: (updatedClass: ClassSession) => void;
-  onDeleteClass: (classId: number) => void;
-  siteSettings: SiteSettings;
-}
+import { useAppStore } from '../store';
 
 const daysOfWeek = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 
@@ -66,7 +57,16 @@ const generateGoogleCalendarLink = (classSession: ClassSession, academyName: str
 };
 
 
-const ScheduleView: React.FC<ScheduleViewProps> = ({ user, classes, onAddClass, onUpdateClass, onDeleteClass, siteSettings }) => {
+const ScheduleView: React.FC = () => {
+  const { user, classes, siteSettings, addClass, updateClass, deleteClass } = useAppStore(state => ({
+    user: state.currentUser!,
+    classes: state.classes,
+    siteSettings: state.siteSettings,
+    addClass: state.addClass,
+    updateClass: state.updateClass,
+    deleteClass: state.deleteClass,
+  }));
+  
   const [bookedClasses, setBookedClasses] = useState<Set<number>>(new Set());
   const [selectedClass, setSelectedClass] = useState<ClassSession | null>(null);
   
@@ -130,16 +130,16 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ user, classes, onAddClass, 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingClass) {
-      onUpdateClass({ ...formData, id: editingClass.id });
+      updateClass({ ...formData, id: editingClass.id });
     } else {
-      onAddClass(formData);
+      addClass(formData);
     }
     handleCloseFormModal();
   };
     
   const handleConfirmDelete = () => {
     if (classToDelete) {
-      onDeleteClass(classToDelete.id);
+      deleteClass(classToDelete.id);
       setClassToDelete(null);
     }
   };

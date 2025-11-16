@@ -1,34 +1,34 @@
 import React from 'react';
-import { type CartItem } from '../types';
 import Modal from './Modal';
 import { TrashIcon } from './icons/TrashIcon';
 import { ShoppingCartIcon } from './icons/ShoppingCartIcon';
+import { useAppStore } from '../store';
 
-interface CartModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  cartItems: CartItem[];
-  onUpdateQuantity: (productId: number, newQuantity: number) => void;
-  onRemoveItem: (productId: number) => void;
-  onClearCart: () => void;
-  onProceedToCheckout: () => void;
-}
+const CartModal: React.FC = () => {
+  const { 
+    isCartOpen, 
+    cartItems, 
+    closeCart, 
+    updateCartQuantity, 
+    removeFromCart, 
+    clearCart, 
+    openCheckout 
+  } = useAppStore(state => ({
+    isCartOpen: state.isCartOpen,
+    cartItems: state.cart,
+    closeCart: state.closeCart,
+    updateCartQuantity: state.updateCartQuantity,
+    removeFromCart: state.removeFromCart,
+    clearCart: state.clearCart,
+    openCheckout: state.openCheckout,
+  }));
 
-const CartModal: React.FC<CartModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  cartItems, 
-  onUpdateQuantity, 
-  onRemoveItem, 
-  onClearCart,
-  onProceedToCheckout
-}) => {
-  if (!isOpen) return null;
+  if (!isCartOpen) return null;
 
   const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in" onClick={closeCart}>
       <div 
         className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-lg m-4 flex flex-col"
         onClick={e => e.stopPropagation()}
@@ -39,7 +39,7 @@ const CartModal: React.FC<CartModalProps> = ({
             <ShoppingCartIcon />
             <span className="ml-2">Seu Carrinho</span>
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-200 text-3xl">&times;</button>
+          <button onClick={closeCart} className="text-gray-400 hover:text-gray-200 text-3xl">&times;</button>
         </div>
         
         {cartItems.length === 0 ? (
@@ -61,11 +61,11 @@ const CartModal: React.FC<CartModalProps> = ({
                     <p className="text-sm text-red-500 font-bold">R$ {item.price.toFixed(2)}</p>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <button onClick={() => onUpdateQuantity(item.id, item.quantity - 1)} className="h-7 w-7 rounded-md bg-gray-700 hover:bg-gray-600">-</button>
+                    <button onClick={() => updateCartQuantity(item.id, item.quantity - 1)} className="h-7 w-7 rounded-md bg-gray-700 hover:bg-gray-600">-</button>
                     <span className="w-8 text-center font-semibold">{item.quantity}</span>
-                    <button onClick={() => onUpdateQuantity(item.id, item.quantity + 1)} className="h-7 w-7 rounded-md bg-gray-700 hover:bg-gray-600">+</button>
+                    <button onClick={() => updateCartQuantity(item.id, item.quantity + 1)} className="h-7 w-7 rounded-md bg-gray-700 hover:bg-gray-600">+</button>
                   </div>
-                  <button onClick={() => onRemoveItem(item.id)} className="p-2 text-gray-400 hover:text-red-500"><TrashIcon /></button>
+                  <button onClick={() => removeFromCart(item.id)} className="p-2 text-gray-400 hover:text-red-500"><TrashIcon /></button>
                 </div>
               ))}
             </div>
@@ -76,10 +76,10 @@ const CartModal: React.FC<CartModalProps> = ({
                     <span className="text-2xl font-bold text-red-500">R$ {total.toFixed(2)}</span>
                 </div>
                 <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                    <button onClick={onClearCart} className="w-full sm:w-auto px-4 py-2 rounded-md text-gray-200 bg-gray-600 hover:bg-gray-500 transition-colors text-sm">
+                    <button onClick={clearCart} className="w-full sm:w-auto px-4 py-2 rounded-md text-gray-200 bg-gray-600 hover:bg-gray-500 transition-colors text-sm">
                         Limpar Carrinho
                     </button>
-                    <button onClick={onProceedToCheckout} className="flex-grow px-4 py-2 rounded-md text-white font-semibold bg-green-600 hover:bg-green-700 transition-colors">
+                    <button onClick={openCheckout} className="flex-grow px-4 py-2 rounded-md text-white font-semibold bg-green-600 hover:bg-green-700 transition-colors">
                         Finalizar Compra via Pix
                     </button>
                 </div>

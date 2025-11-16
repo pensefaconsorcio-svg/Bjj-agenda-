@@ -1,33 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { type User } from '../types';
 import Modal from './Modal';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { EditIcon } from './icons/EditIcon';
+import { SpinnerIcon } from './icons/SpinnerIcon';
+import { useAppStore } from '../store';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import toast from 'react-hot-toast';
 
-interface UserManagementViewProps {
-  users: User[];
-  currentUser: User;
-  onCreateUser: (userData: { email: string; pass: string; role: 'admin' | 'user' | 'mestre'; name: string; paymentDueDate: string | null }) => boolean;
-  onUpdateUser: (userData: User & { pass?: string }) => void;
-  onDeleteUser: (userId: number) => void;
-}
+// Base object schema without refinement
+const baseUserObject = z.object({
+  name: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
+  email: z.string().email('Formato de e-mail inválido.'),
+  pass: z.string().optional(),
+  role: z.enum(['admin', 'user', 'mestre']),
+  paymentDueDate: z.string().nullable(),
+});
 
-type FormData = {
-  name: string;
-  email: string;
-  pass: string;
-  role: 'admin' | 'user' | 'mestre';
-  paymentDueDate: string | null;
-}
-
-const initialFormState: FormData = {
-  name: '',
-  email: '',
-  pass: '',
-  role: 'user',
-  paymentDueDate: new Date().toISOString().split('T')[0],
+// Refinement logic and options
+const refinement = (data: z.infer<typeof baseUserObject>) => data.role !== 'user' || !!data.paymentDueDate;
+const refinementOptions = {
+  message: 'Data de vencimento é obrigatória para usuários.',
+  path: ['paymentDueDate'],
 };
+
+// Schema for updating users
+const userSchema = baseUserObject.refine(refinement, refinementOptions);
+
+// Schema for creating users (extends the base to make password required, then applies the same refinement)
+const createUserSchema = baseUserObject.extend({
+  pass: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres.'),
+}).refine(refinement, refinementOptions);
+
+
+type FormData = z.infer<typeof userSchema>;
 
 const getPaymentStatus = (dueDate: string | null) => {
     if (!dueDate) {
@@ -47,24 +55,44 @@ const getPaymentStatus = (dueDate: string | null) => {
 };
 
 
-const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentUser, onCreateUser, onUpdateUser, onDeleteUser }) => {
+const UserManagementView: React.FC = () => {
+  const { users, currentUser, createUser, updateUser, deleteUser, setCurrentView, setSelectedUserId } = useAppStore(state => ({
+    users: state.users,
+    currentUser: state.currentUser!,
+    createUser: state.createUser,
+    updateUser: state.updateUser,
+    deleteUser: state.deleteUser,
+    setCurrentView: state.setCurrentView,
+    setSelectedUserId: state.setSelectedUserId,
+  }));
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [formData, setFormData] = useState<FormData>(initialFormState);
-  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<typeof users[0] | null>(null);
+  const [userToDelete, setUserToDelete] = useState<typeof users[0] | null>(null);
+
+  const { register, handleSubmit, formState: { errors, isSubmitting }, reset, watch } = useForm<FormData>({
+    resolver: zodResolver(editingUser ? userSchema : createUserSchema),
+  });
+
+  const watchRole = watch('role');
 
   useEffect(() => {
     if (editingUser) {
-        const { name, email, role, paymentDueDate } = editingUser;
-        setFormData({ name, email, role, paymentDueDate, pass: '' });
+        reset({
+            ...editingUser,
+            pass: '',
+            paymentDueDate: editingUser.paymentDueDate || new Date().toISOString().split('T')[0]
+        });
     } else {
-        setFormData({
-            ...initialFormState,
-            // When mestre creates a user, it MUST be a 'user'
+        reset({
+            name: '',
+            email: '',
+            pass: '',
             role: currentUser.role === 'mestre' ? 'user' : 'user',
+            paymentDueDate: new Date().toISOString().split('T')[0],
         });
     }
-  }, [editingUser, isModalOpen, currentUser.role]);
+  }, [editingUser, isModalOpen, reset, currentUser.role]);
 
 
   const handleOpenAddModal = () => {
@@ -72,7 +100,8 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
     setIsModalOpen(true);
   };
 
-  const handleOpenEditModal = (user: User) => {
+  const handleOpenEditModal = (e: React.MouseEvent, user: typeof users[0]) => {
+    e.stopPropagation();
     setEditingUser(user);
     setIsModalOpen(true);
   };
@@ -81,42 +110,52 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
     setIsModalOpen(false);
     setEditingUser(null);
   };
-
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  
+  const handleRowClick = (user: typeof users[0]) => {
+    setSelectedUserId(user.id);
+    setCurrentView('userDetail');
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (editingUser) {
-        if(formData.pass && formData.pass.length < 6) {
-            alert('A nova senha deve ter pelo menos 6 caracteres.');
-            return;
-        }
-        onUpdateUser({ ...editingUser, ...formData });
-        handleCloseModal();
-    } else {
-       if (formData.email && formData.pass) {
-          const success = onCreateUser({
-            ...formData, 
-            paymentDueDate: formData.role === 'user' ? formData.paymentDueDate : null
-          });
-          if (success) {
-            handleCloseModal();
-          }
+  const processFormSubmit = async (data: FormData) => {
+    try {
+        if (editingUser) {
+            if (data.pass && data.pass.length > 0 && data.pass.length < 6) {
+                toast.error('A nova senha deve ter pelo menos 6 caracteres.');
+                return;
+            }
+            await updateUser({ ...editingUser, ...data });
+            toast.success('Usuário atualizado com sucesso!');
         } else {
-          alert('Por favor, preencha todos os campos obrigatórios.');
+           const result = await createUser({
+             ...(data as Required<FormData>), // pass is required by schema here
+             paymentDueDate: data.role === 'user' ? data.paymentDueDate : null
+           });
+           if (result.success) {
+               toast.success('Usuário criado com sucesso!');
+           } else {
+               toast.error(result.message || 'Erro ao criar usuário.');
+               return; // Prevent modal from closing on error
+           }
         }
+        handleCloseModal();
+    } catch (error) {
+        toast.error('Ocorreu um erro.');
     }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (userToDelete) {
-      onDeleteUser(userToDelete.id);
+      const success = await deleteUser(userToDelete.id);
+      if (success) {
+        toast.success(`Usuário ${userToDelete.name} excluído.`);
+      }
       setUserToDelete(null);
     }
+  };
+  
+  const handleDeleteClick = (e: React.MouseEvent, user: typeof users[0]) => {
+      e.stopPropagation();
+      setUserToDelete(user);
   };
 
   return (
@@ -152,7 +191,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
                   else if (currentUser.role === 'mestre' && user.role === 'admin') disabledTitle = 'Mestres não podem alterar Administradores';
 
                   return (
-                    <tr key={user.id} className="hover:bg-gray-700/50">
+                    <tr key={user.id} onClick={() => handleRowClick(user)} className="hover:bg-gray-700/50 cursor-pointer">
                       <td className="p-4">
                         <p className="font-medium text-gray-100">{user.name}</p>
                         <p className="text-sm text-gray-400">{user.email}</p>
@@ -178,7 +217,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
                       </td>
                       <td className="p-4 text-right">
                          <button
-                            onClick={() => handleOpenEditModal(user)}
+                            onClick={(e) => handleOpenEditModal(e, user)}
                             disabled={isActionDisabled}
                             className="p-2 mr-2 text-gray-400 hover:text-red-500 rounded-full transition-colors disabled:text-gray-600 disabled:cursor-not-allowed"
                             aria-label={`Editar usuário ${user.name}`}
@@ -187,7 +226,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
                             <EditIcon />
                           </button>
                         <button
-                          onClick={() => setUserToDelete(user)}
+                          onClick={(e) => handleDeleteClick(e, user)}
                           disabled={isActionDisabled}
                           className="p-2 text-gray-400 hover:text-red-500 rounded-full transition-colors disabled:text-gray-600 disabled:cursor-not-allowed"
                           aria-label={`Excluir usuário ${user.name}`}
@@ -218,18 +257,8 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
               <strong>Atenção:</strong> Esta ação não pode ser desfeita.
             </p>
             <div className="mt-6 flex justify-end space-x-4">
-              <button
-                onClick={() => setUserToDelete(null)}
-                className="px-4 py-2 rounded-md text-gray-200 bg-gray-700 hover:bg-gray-600 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                className="px-4 py-2 rounded-md text-white bg-red-800 hover:bg-red-700 transition-colors"
-              >
-                Excluir Usuário
-              </button>
+              <button onClick={() => setUserToDelete(null)} className="px-4 py-2 rounded-md text-gray-200 bg-gray-700 hover:bg-gray-600">Cancelar</button>
+              <button onClick={handleConfirmDelete} className="px-4 py-2 rounded-md text-white bg-red-800 hover:bg-red-700">Excluir Usuário</button>
             </div>
           </div>
         )}
@@ -237,77 +266,48 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
 
       {/* Add/Edit User Modal */}
       <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingUser ? 'Editar Usuário' : 'Adicionar Novo Usuário'}>
-        <form onSubmit={handleFormSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(processFormSubmit)} className="space-y-4">
            <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">Nome Completo</label>
-            <input 
-              type="text" id="name" name="name" value={formData.name} 
-              onChange={handleFormChange} required 
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500" 
-            />
+            <input {...register('name')} type="text" id="name" className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg" />
+            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
           </div>
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">Email</label>
-            <input 
-              type="email" id="email" name="email" value={formData.email} 
-              onChange={handleFormChange} required
-              disabled={!!editingUser}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-800 disabled:cursor-not-allowed" 
-            />
+            <input {...register('email')} type="email" id="email" disabled={!!editingUser} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg disabled:bg-gray-800 disabled:cursor-not-allowed" />
+            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
           </div>
           <div>
-            <label htmlFor="pass" className="block text-sm font-medium text-gray-300 mb-1">
-              {editingUser ? 'Nova Senha (opcional)' : 'Senha'}
-            </label>
-            <input
-              type="password" id="pass" name="pass" value={formData.pass}
-              onChange={handleFormChange}
-              required={!editingUser}
-              placeholder={editingUser ? 'Deixe em branco para não alterar' : ''}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
-            />
+            <label htmlFor="pass" className="block text-sm font-medium text-gray-300 mb-1">{editingUser ? 'Nova Senha (opcional)' : 'Senha'}</label>
+            <input {...register('pass')} type="password" id="pass" placeholder={editingUser ? 'Deixe em branco para não alterar' : ''} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg" />
+            {errors.pass && <p className="text-red-500 text-xs mt-1">{errors.pass.message}</p>}
           </div>
           <div>
             <label htmlFor="role" className="block text-sm font-medium text-gray-300 mb-1">Função</label>
-            <select 
-              id="role" name="role" value={formData.role} 
-              onChange={handleFormChange} 
-              disabled={currentUser.role === 'mestre'}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-800 disabled:cursor-not-allowed"
-            >
+            <select {...register('role')} id="role" disabled={currentUser.role === 'mestre'} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg disabled:bg-gray-800 disabled:cursor-not-allowed">
               {currentUser.role === 'admin' ? (
                  <>
                     <option value="user">Usuário</option>
                     <option value="mestre">Mestre</option>
                     <option value="admin">Admin</option>
                  </>
-              ) : (
-                <>
+              ) : ( <>
                     <option value="user">Usuário</option>
-                    {/* A Mestre can see 'Mestre' if they are editing another mestre, but can't change it. */}
-                    {formData.role === 'mestre' && <option value="mestre">Mestre</option>}
-                </>
-              )}
+                    {watchRole === 'mestre' && <option value="mestre">Mestre</option>}
+                  </>)}
             </select>
           </div>
-           {formData.role === 'user' && (
+           {watchRole === 'user' && (
               <div>
                 <label htmlFor="paymentDueDate" className="block text-sm font-medium text-gray-300 mb-1">Data de Vencimento</label>
-                <input
-                  type="date" id="paymentDueDate" name="paymentDueDate"
-                  value={formData.paymentDueDate || ''}
-                  onChange={handleFormChange}
-                  required
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
-                />
+                <input {...register('paymentDueDate')} type="date" id="paymentDueDate" className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg" />
+                {errors.paymentDueDate && <p className="text-red-500 text-xs mt-1">{errors.paymentDueDate.message}</p>}
               </div>
             )}
           <div className="mt-6 flex justify-end space-x-4 pt-4">
-            <button type="button" onClick={handleCloseModal} className="px-4 py-2 rounded-md text-gray-200 bg-gray-600 hover:bg-gray-500 transition-colors">
-              Cancelar
-            </button>
-            <button type="submit" className="px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors">
-              {editingUser ? 'Salvar Alterações' : 'Criar Usuário'}
+            <button type="button" onClick={handleCloseModal} className="px-4 py-2 rounded-md text-gray-200 bg-gray-600 hover:bg-gray-500">Cancelar</button>
+            <button type="submit" disabled={isSubmitting} className="flex items-center justify-center w-40 px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700 disabled:bg-red-800">
+              {isSubmitting ? <SpinnerIcon /> : (editingUser ? 'Salvar Alterações' : 'Criar Usuário')}
             </button>
           </div>
         </form>

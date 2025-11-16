@@ -1,24 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { type User, type FinancialTransaction, type TransactionCategory } from '../types';
+import { type FinancialTransaction, type TransactionCategory } from '../types';
 import Modal from './Modal';
-import { PlusCircleIcon } from './icons/PlusCircleIcon';
-import { EditIcon } from './icons/EditIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { ArrowUpCircleIcon } from './icons/ArrowUpCircleIcon';
 import { ArrowDownCircleIcon } from './icons/ArrowDownCircleIcon';
 import AIAssistant from './AIAssistant';
-
-
-interface FinancialViewProps {
-  users: User[];
-  transactions: FinancialTransaction[];
-  categories: TransactionCategory[];
-  onAddTransaction: (transaction: Omit<FinancialTransaction, 'id'>) => void;
-  onDeleteTransaction: (transactionId: number) => void;
-  onAddCategory: (category: Omit<TransactionCategory, 'id'>) => void;
-  onUpdateCategory: (category: TransactionCategory) => void;
-  onDeleteCategory: (categoryId: number) => void;
-}
+import { useAppStore } from '../store';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const getPaymentStatus = (dueDate: string | null) => {
     if (!dueDate) return { text: 'N/A', color: 'bg-gray-600 text-gray-200' };
@@ -113,7 +101,86 @@ const CategoryModal: React.FC<{
     )
 }
 
-const FinancialView: React.FC<FinancialViewProps> = ({ users, transactions, categories, onAddTransaction, onDeleteTransaction, onAddCategory, onUpdateCategory, onDeleteCategory }) => {
+const FinancialChart: React.FC<{ transactions: FinancialTransaction[] }> = ({ transactions }) => {
+    const chartData = useMemo(() => {
+        const dataByMonth: { [key: string]: { name: string; income: number; expense: number } } = {};
+        const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+        transactions.forEach(t => {
+            const date = new Date(t.date + 'T00:00:00');
+            const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
+            if (!dataByMonth[monthKey]) {
+                dataByMonth[monthKey] = {
+                    name: `${monthNames[date.getMonth()]}/${String(date.getFullYear()).slice(2)}`,
+                    income: 0,
+                    expense: 0,
+                };
+            }
+            if (t.type === 'income') {
+                dataByMonth[monthKey].income += t.amount;
+            } else {
+                dataByMonth[monthKey].expense += t.amount;
+            }
+        });
+
+        return Object.values(dataByMonth).sort((a,b) => {
+            const [aMonth, aYear] = a.name.split('/');
+            const [bMonth, bYear] = b.name.split('/');
+            if (aYear !== bYear) return Number(aYear) - Number(bYear);
+            return monthNames.indexOf(aMonth) - monthNames.indexOf(bMonth);
+        }).slice(-6); // Last 6 months
+    }, [transactions]);
+
+    if (chartData.length === 0) {
+        return <div className="text-center text-gray-500 py-8">Dados insuficientes para gerar o gráfico.</div>;
+    }
+
+    return (
+        <div style={{ width: '100%', height: 300 }}>
+            <ResponsiveContainer>
+                <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#4B5563" />
+                    <XAxis dataKey="name" tick={{ fill: '#9CA3AF' }} />
+                    <YAxis tick={{ fill: '#9CA3AF' }} tickFormatter={(value) => `R$${value}`} />
+                    <Tooltip
+                        cursor={{ fill: 'rgba(156, 163, 175, 0.1)' }}
+                        contentStyle={{
+                            backgroundColor: '#1F2937',
+                            borderColor: '#4B5563',
+                            color: '#F9FAFB'
+                        }}
+                        formatter={(value: number) => `R$ ${value.toFixed(2)}`}
+                    />
+                    <Legend wrapperStyle={{ color: '#D1D5DB' }} />
+                    <Bar dataKey="income" fill="#10B981" name="Entradas" />
+                    <Bar dataKey="expense" fill="#EF4444" name="Saídas" />
+                </BarChart>
+            </ResponsiveContainer>
+        </div>
+    );
+};
+
+const FinancialView: React.FC = () => {
+    const { 
+        users, 
+        transactions, 
+        categories, 
+        addTransaction, 
+        deleteTransaction, 
+        addCategory, 
+        updateCategory, 
+        deleteCategory 
+    } = useAppStore(state => ({
+        users: state.users,
+        transactions: state.financialTransactions,
+        categories: state.financialCategories,
+        addTransaction: state.addTransaction,
+        deleteTransaction: state.deleteTransaction,
+        addCategory: state.addCategory,
+        updateCategory: state.updateCategory,
+        deleteCategory: state.deleteCategory,
+    }));
+    
     const [activeTab, setActiveTab] = useState<'overview' | 'students'>('overview');
     const [isTransactionModalOpen, setTransactionModalOpen] = useState(false);
     const [transactionType, setTransactionType] = useState<'income' | 'expense'>('income');
@@ -153,17 +220,17 @@ const FinancialView: React.FC<FinancialViewProps> = ({ users, transactions, cate
                     <div className="bg-gray-800 border border-gray-700 rounded-xl p-6"><p className="text-sm font-medium text-gray-400">Total de Saídas</p><p className="text-3xl font-bold text-red-500 mt-2">R$ {totalExpense.toFixed(2)}</p></div>
                     <div className="bg-gray-800 border border-gray-700 rounded-xl p-6"><p className="text-sm font-medium text-gray-400">Saldo Atual</p><p className={`text-3xl font-bold ${balance >= 0 ? 'text-blue-500' : 'text-yellow-500'} mt-2`}>R$ {balance.toFixed(2)}</p></div>
                 </div>
+                
+                 <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+                    <h2 className="text-xl font-bold text-gray-100 mb-4">Resumo Mensal</h2>
+                    <FinancialChart transactions={transactions} />
+                </div>
 
                 <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
                     <div className="flex flex-wrap gap-4 justify-between items-center mb-4">
                          <h2 className="text-xl font-bold text-gray-100">Últimas Transações</h2>
                         <div className="flex flex-wrap gap-2">
-                             <AIAssistant 
-                                transactions={transactions}
-                                categories={categories}
-                                onAddTransaction={onAddTransaction}
-                                onDeleteTransaction={onDeleteTransaction}
-                             />
+                             <AIAssistant />
                              <button onClick={() => handleOpenTransactionModal('income')} className="flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg bg-green-600/20 text-green-400 hover:bg-green-600/40">Adicionar Entrada</button>
                              <button onClick={() => handleOpenTransactionModal('expense')} className="flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/40">Adicionar Saída</button>
                              <button onClick={() => setCategoryModalOpen(true)} className="px-3 py-2 text-sm font-semibold rounded-lg bg-gray-600 hover:bg-gray-500">Categorias</button>
@@ -182,7 +249,7 @@ const FinancialView: React.FC<FinancialViewProps> = ({ users, transactions, cate
                                     <td className="p-3 text-sm text-gray-300">{category ? `${category.emoji} ${category.name}` : 'Sem Categoria'}</td>
                                     <td className="p-3 text-sm text-gray-400 font-mono">{new Date(t.date + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
                                     <td className={`p-3 text-right font-semibold ${t.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>R$ {t.amount.toFixed(2)}</td>
-                                    <td className="p-3 text-right"><button onClick={() => onDeleteTransaction(t.id)} className="p-1 text-gray-500 hover:text-red-400"><TrashIcon /></button></td>
+                                    <td className="p-3 text-right"><button onClick={() => deleteTransaction(t.id)} className="p-1 text-gray-500 hover:text-red-400"><TrashIcon /></button></td>
                                 </tr>);
                             })}</tbody>
                         </table>
@@ -216,8 +283,8 @@ const FinancialView: React.FC<FinancialViewProps> = ({ users, transactions, cate
             </div>
         )}
 
-        <TransactionModal isOpen={isTransactionModalOpen} onClose={() => setTransactionModalOpen(false)} type={transactionType} categories={categories} onSave={onAddTransaction}/>
-        <CategoryModal isOpen={isCategoryModalOpen} onClose={() => setCategoryModalOpen(false)} categories={categories} onAdd={onAddCategory} onUpdate={onUpdateCategory} onDelete={onDeleteCategory}/>
+        <TransactionModal isOpen={isTransactionModalOpen} onClose={() => setTransactionModalOpen(false)} type={transactionType} categories={categories} onSave={addTransaction}/>
+        <CategoryModal isOpen={isCategoryModalOpen} onClose={() => setCategoryModalOpen(false)} categories={categories} onAdd={addCategory} onUpdate={updateCategory} onDelete={deleteCategory}/>
     </div>
   );
 };

@@ -3,13 +3,11 @@ import { InstagramIcon } from './icons/InstagramIcon';
 import { FacebookIcon } from './icons/FacebookIcon';
 import { XIcon } from './icons/XIcon';
 import { WhatsappIcon } from './icons/WhatsappIcon';
-import { type SiteSettings } from '../types';
+import { useAppStore } from '../store';
 
-interface FooterProps {
-  siteSettings: SiteSettings;
-}
+const Footer: React.FC = () => {
+  const siteSettings = useAppStore(state => state.siteSettings);
 
-const Footer: React.FC<FooterProps> = ({ siteSettings }) => {
   return (
     <footer className="bg-gray-800 mt-8 border-t border-gray-700">
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center text-gray-400">

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, FunctionDeclaration, Type } from '@google/genai';
 import { MicrophoneIcon } from './icons/MicrophoneIcon';
-import { type FinancialTransaction, type TransactionCategory, type AITransactionResult } from '../types';
+import { useAppStore } from '../store';
 
 // Fix: Add types for Web Speech API to fix "Cannot find name 'SpeechRecognition'" errors.
 interface SpeechRecognitionAlternative {
@@ -44,14 +44,14 @@ declare global {
     }
 }
 
-interface AIAssistantProps {
-    transactions: FinancialTransaction[];
-    categories: TransactionCategory[];
-    onAddTransaction: (transaction: Omit<FinancialTransaction, 'id'>) => void;
-    onDeleteTransaction: (transactionId: number) => void;
-}
+const AIAssistant: React.FC = () => {
+    const { transactions, categories, addTransaction, deleteTransaction } = useAppStore(state => ({
+        transactions: state.financialTransactions,
+        categories: state.financialCategories,
+        addTransaction: state.addTransaction,
+        deleteTransaction: state.deleteTransaction,
+    }));
 
-const AIAssistant: React.FC<AIAssistantProps> = ({ transactions, categories, onAddTransaction, onDeleteTransaction }) => {
     const [isListening, setIsListening] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [statusMessage, setStatusMessage] = useState('Clique no microfone para começar');
@@ -182,12 +182,13 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ transactions, categories, onA
             if (response.functionCalls && response.functionCalls.length > 0) {
                 const fc = response.functionCalls[0];
                 if (fc.name === 'addTransaction') {
-                    const { type, amount, description, categoryName } = fc.args;
+                    // Fix: Explicitly cast arguments from function call to ensure type safety.
+                    const { type, amount, description, categoryName } = fc.args as { type: 'income' | 'expense', amount: number, description: string, categoryName: string };
                     const categoryId = findClosestCategory(categoryName, type);
                     if (categoryId === 0) {
                         throw new Error(`Nenhuma categoria do tipo '${type}' encontrada.`);
                     }
-                    onAddTransaction({
+                    addTransaction({
                         type,
                         amount,
                         description,
@@ -196,10 +197,11 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ transactions, categories, onA
                     });
                     setStatusMessage(`✅ Entrada de R$ ${amount.toFixed(2)} adicionada!`);
                 } else if (fc.name === 'removeTransaction') {
-                    const { description, amount } = fc.args;
+                    // Fix: Explicitly cast arguments from function call to ensure type safety.
+                    const { description, amount } = fc.args as { description: string, amount?: number };
                     const transactionId = findTransactionToDelete(description, amount);
                     if (transactionId) {
-                        onDeleteTransaction(transactionId);
+                        deleteTransaction(transactionId);
                         setStatusMessage('🗑️ Transação removida com sucesso!');
                     } else {
                         setStatusMessage('⚠️ Transação não encontrada.');

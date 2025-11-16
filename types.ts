@@ -98,4 +98,4 @@ export interface AITransactionResult {
 }
 
 
-export type View = 'dashboard' | 'schedule' | 'announcements' | 'store' | 'booking' | 'promotions' | 'settings' | 'userManagement' | 'financial';
+export type View = 'dashboard' | 'schedule' | 'announcements' | 'store' | 'booking' | 'promotions' | 'settings' | 'userManagement' | 'financial' | 'userDetail';

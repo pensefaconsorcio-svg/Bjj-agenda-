@@ -1,18 +1,13 @@
-
-
-
 import React, { useState } from 'react';
-import { type User, type SiteSettings } from '../types';
 import ForgotPasswordModal from './ForgotPasswordModal';
+import { useAppStore } from '../store';
 
-interface LoginViewProps {
-  onLogin: (credentials: { email: string, pass: string }) => boolean;
-  siteSettings: SiteSettings;
-  users: User[];
-  onResetPassword: (email: string, newPass: string) => boolean;
-}
+const LoginView: React.FC = () => {
+    const { login, siteSettings } = useAppStore(state => ({
+        login: state.login,
+        siteSettings: state.siteSettings,
+    }));
 
-const LoginView: React.FC<LoginViewProps> = ({ onLogin, siteSettings, users, onResetPassword }) => {
     // Login state
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
@@ -22,7 +17,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, siteSettings, users, onR
     const handleLoginSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setLoginError('');
-        const success = onLogin({ email: loginEmail, pass: loginPassword });
+        const success = login({ email: loginEmail, pass: loginPassword });
         if (!success) {
             setLoginError('E-mail ou senha inválidos.');
         }
@@ -96,8 +91,6 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, siteSettings, users, onR
             <ForgotPasswordModal 
                 isOpen={isForgotPasswordOpen}
                 onClose={() => setIsForgotPasswordOpen(false)}
-                users={users}
-                onResetPassword={onResetPassword}
             />
         </div>
     );

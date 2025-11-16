@@ -2,15 +2,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { type User } from '../types';
 import Modal from './Modal';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
+import { useAppStore } from '../store';
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
   onClose: () => void;
-  users: User[];
-  onResetPassword: (email: string, newPass: string) => boolean;
 }
 
-const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClose, users, onResetPassword }) => {
+const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClose }) => {
+  const users = useAppStore(state => state.users);
+  const resetPassword = useAppStore(state => state.resetPassword);
+
   type Step = 'email' | 'security' | 'reset' | 'success';
 
   const [step, setStep] = useState<Step>('email');
@@ -75,7 +77,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
       return;
     }
     if (userToReset) {
-      const success = onResetPassword(userToReset.email, newPassword);
+      const success = resetPassword(userToReset.email, newPassword);
       if (success) {
         setStep('success');
       } else {
