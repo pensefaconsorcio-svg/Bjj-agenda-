@@ -6,6 +6,8 @@ import { EditIcon } from './icons/EditIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { ArrowUpCircleIcon } from './icons/ArrowUpCircleIcon';
 import { ArrowDownCircleIcon } from './icons/ArrowDownCircleIcon';
+import AIAssistant from './AIAssistant';
+
 
 interface FinancialViewProps {
   users: User[];
@@ -155,7 +157,13 @@ const FinancialView: React.FC<FinancialViewProps> = ({ users, transactions, cate
                 <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
                     <div className="flex flex-wrap gap-4 justify-between items-center mb-4">
                          <h2 className="text-xl font-bold text-gray-100">Últimas Transações</h2>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
+                             <AIAssistant 
+                                transactions={transactions}
+                                categories={categories}
+                                onAddTransaction={onAddTransaction}
+                                onDeleteTransaction={onDeleteTransaction}
+                             />
                              <button onClick={() => handleOpenTransactionModal('income')} className="flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg bg-green-600/20 text-green-400 hover:bg-green-600/40">Adicionar Entrada</button>
                              <button onClick={() => handleOpenTransactionModal('expense')} className="flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/40">Adicionar Saída</button>
                              <button onClick={() => setCategoryModalOpen(true)} className="px-3 py-2 text-sm font-semibold rounded-lg bg-gray-600 hover:bg-gray-500">Categorias</button>

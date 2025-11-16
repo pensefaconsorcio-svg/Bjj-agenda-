@@ -100,7 +100,7 @@ const PromotionsView: React.FC<PromotionsViewProps> = ({ user, plans, siteSettin
   const [featuresString, setFeaturesString] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<PromotionPlan | null>(null);
 
-  const isAdmin = user.role === 'admin';
+  const isAdminOrMestre = user.role === 'admin' || user.role === 'mestre';
 
   useEffect(() => {
     if (editingPlan) {
@@ -169,7 +169,7 @@ const PromotionsView: React.FC<PromotionsViewProps> = ({ user, plans, siteSettin
           <p className="mt-4 text-lg text-gray-400">Escolha o plano que melhor se adapta à sua jornada no tatame.</p>
         </div>
         
-        {isAdmin && (
+        {isAdminOrMestre && (
              <div className="flex justify-end mb-6">
                 <button 
                     onClick={handleOpenAddModal} 
@@ -191,7 +191,7 @@ const PromotionsView: React.FC<PromotionsViewProps> = ({ user, plans, siteSettin
                   : 'border-gray-700'
               } transition-all duration-300 hover:border-red-500 hover:-translate-y-2`}
             >
-              {isAdmin && (
+              {isAdminOrMestre && (
                   <div className="absolute top-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => handleOpenEditModal(plan)} className="p-2 text-gray-400 hover:text-red-500 bg-gray-700 rounded-full"><EditIcon /></button>
                       <button onClick={() => handleDelete(plan.id)} className="p-2 text-gray-400 hover:text-red-500 bg-gray-700 rounded-full"><TrashIcon /></button>

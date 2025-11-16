@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { type Product, type User } from '../types';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
@@ -29,7 +30,7 @@ const StoreView: React.FC<StoreViewProps> = ({ user, products, onAddProduct, onU
   const [formData, setFormData] = useState(initialFormState);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
-  const isAdmin = user.role === 'admin';
+  const isAdminOrMestre = user.role === 'admin' || user.role === 'mestre';
 
   useEffect(() => {
     if (editingProduct) {
@@ -98,7 +99,7 @@ const StoreView: React.FC<StoreViewProps> = ({ user, products, onAddProduct, onU
     <>
       <div className="animate-fade-in-up">
         <div className="flex justify-end mb-6">
-          {isAdmin && (
+          {isAdminOrMestre && (
             <button
               onClick={handleOpenAddModal}
               className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 shadow-sm"
@@ -122,7 +123,7 @@ const StoreView: React.FC<StoreViewProps> = ({ user, products, onAddProduct, onU
                 <div className="flex-grow"></div>
                 <div className="flex items-center justify-between mt-4">
                   <span className="text-xl font-bold text-red-500">R$ {product.price.toFixed(2)}</span>
-                  {isAdmin ? (
+                  {isAdminOrMestre ? (
                     <div className="flex items-center space-x-2">
                       <button onClick={() => handleOpenEditModal(product)} className="p-2 text-gray-400 hover:text-red-500 bg-gray-700 rounded-full transition-colors"><EditIcon /></button>
                       <button onClick={() => setProductToDelete(product)} className="p-2 text-gray-400 hover:text-red-500 bg-gray-700 rounded-full transition-colors"><TrashIcon /></button>

@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { type ClassSession, type User, type SiteSettings } from '../types';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
@@ -75,7 +76,7 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ user, classes, onAddClass, 
   const [formData, setFormData] = useState(initialFormState);
   const [classToDelete, setClassToDelete] = useState<ClassSession | null>(null);
 
-  const isAdmin = user.role === 'admin';
+  const isAdminOrMestre = user.role === 'admin' || user.role === 'mestre';
 
   useEffect(() => {
     if (editingClass) {
@@ -226,7 +227,7 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ user, classes, onAddClass, 
                 <ExportIcon />
                 <span>Exportar Agenda</span>
             </button>
-            {isAdmin && (
+            {isAdminOrMestre && (
                 <button 
                     onClick={handleOpenAddModal} 
                     className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 shadow-sm"
@@ -251,7 +252,7 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ user, classes, onAddClass, 
                       <p className="text-gray-400 mt-2">Instrutor: {classSession.instructor}</p>
                       <p className="text-gray-400">Nível: {classSession.level}</p>
                     </div>
-                    {isAdmin ? (
+                    {isAdminOrMestre ? (
                         <div className="mt-6 flex justify-end items-center space-x-3">
                             <a href={googleCalendarLink} target="_blank" rel="noopener noreferrer" title="Adicionar ao Google Agenda" className="p-2 text-gray-400 hover:text-red-500 bg-gray-700 rounded-full transition-colors"><CalendarPlusIcon /></a>
                             <button onClick={() => handleOpenEditModal(classSession)} className="p-2 text-gray-400 hover:text-red-500 bg-gray-700 rounded-full transition-colors"><EditIcon /></button>

@@ -1,18 +1,23 @@
 
 
+
 import React, { useState } from 'react';
 import { type User, type SiteSettings } from '../types';
+import ForgotPasswordModal from './ForgotPasswordModal';
 
 interface LoginViewProps {
   onLogin: (credentials: { email: string, pass: string }) => boolean;
   siteSettings: SiteSettings;
+  users: User[];
+  onResetPassword: (email: string, newPass: string) => boolean;
 }
 
-const LoginView: React.FC<LoginViewProps> = ({ onLogin, siteSettings }) => {
+const LoginView: React.FC<LoginViewProps> = ({ onLogin, siteSettings, users, onResetPassword }) => {
     // Login state
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
     const [loginError, setLoginError] = useState('');
+    const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
 
     const handleLoginSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -57,7 +62,16 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, siteSettings }) => {
                                 <input id="email-login" name="email" type="email" autoComplete="email" required value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} className="mt-1 block w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="seu@email.com" />
                             </div>
                             <div>
-                                <label htmlFor="password-login" className="block text-sm font-medium text-gray-300">Senha</label>
+                                <div className="flex items-center justify-between">
+                                    <label htmlFor="password-login" className="block text-sm font-medium text-gray-300">Senha</label>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setIsForgotPasswordOpen(true)}
+                                        className="text-sm font-medium text-red-500 hover:text-red-400 focus:outline-none"
+                                    >
+                                        Esqueci minha senha
+                                    </button>
+                                </div>
                                 <input id="password-login" name="password" type="password" autoComplete="current-password" required value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} className="mt-1 block w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="••••••••" />
                             </div>
 
@@ -79,6 +93,12 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, siteSettings }) => {
                     </div>
                 </div>
             </div>
+            <ForgotPasswordModal 
+                isOpen={isForgotPasswordOpen}
+                onClose={() => setIsForgotPasswordOpen(false)}
+                users={users}
+                onResetPassword={onResetPassword}
+            />
         </div>
     );
 };

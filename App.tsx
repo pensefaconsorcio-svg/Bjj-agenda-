@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Header'; // Using Header file for Sidebar component
 import ScheduleView from './components/ScheduleView';
@@ -125,6 +126,15 @@ const App: React.FC = () => {
     if (user && userCredentials.pass === correctPassword) {
       setCurrentUser(user);
       setCurrentView('dashboard');
+      return true;
+    }
+    return false;
+  };
+  
+  const handleResetPassword = (email: string, newPass: string): boolean => {
+    const userExists = users.some(u => u.email === email);
+    if (userExists && credentials[email]) {
+      setCredentials(prev => ({ ...prev, [email]: newPass }));
       return true;
     }
     return false;
@@ -478,7 +488,9 @@ const App: React.FC = () => {
   if (!currentUser) {
     return <LoginView 
             onLogin={handleLogin} 
-            siteSettings={siteSettings} 
+            siteSettings={siteSettings}
+            users={users}
+            onResetPassword={handleResetPassword}
           />;
   }
   

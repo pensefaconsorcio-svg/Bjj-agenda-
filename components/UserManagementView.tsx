@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { type User } from '../types';
 import Modal from './Modal';
@@ -59,9 +58,13 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
         const { name, email, role, paymentDueDate } = editingUser;
         setFormData({ name, email, role, paymentDueDate, pass: '' });
     } else {
-        setFormData(initialFormState);
+        setFormData({
+            ...initialFormState,
+            // When mestre creates a user, it MUST be a 'user'
+            role: currentUser.role === 'mestre' ? 'user' : 'user',
+        });
     }
-  }, [editingUser, isModalOpen]);
+  }, [editingUser, isModalOpen, currentUser.role]);
 
 
   const handleOpenAddModal = () => {
@@ -142,7 +145,12 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
             <tbody className="divide-y divide-gray-700">
               {users.map(user => {
                   const paymentStatus = getPaymentStatus(user.paymentDueDate);
-                  const canMestreAct = currentUser.role === 'mestre' && user.role !== 'user';
+                  const isActionDisabled = (currentUser.role === 'mestre' && user.role === 'admin') || user.id === currentUser.id;
+                  
+                  let disabledTitle = '';
+                  if (user.id === currentUser.id) disabledTitle = 'Não é possível alterar a si mesmo';
+                  else if (currentUser.role === 'mestre' && user.role === 'admin') disabledTitle = 'Mestres não podem alterar Administradores';
+
                   return (
                     <tr key={user.id} className="hover:bg-gray-700/50">
                       <td className="p-4">
@@ -171,19 +179,19 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
                       <td className="p-4 text-right">
                          <button
                             onClick={() => handleOpenEditModal(user)}
-                            disabled={canMestreAct}
+                            disabled={isActionDisabled}
                             className="p-2 mr-2 text-gray-400 hover:text-red-500 rounded-full transition-colors disabled:text-gray-600 disabled:cursor-not-allowed"
                             aria-label={`Editar usuário ${user.name}`}
-                            title={canMestreAct ? 'Permissão negada' : `Editar usuário ${user.name}`}
+                            title={isActionDisabled ? disabledTitle : `Editar usuário ${user.name}`}
                           >
                             <EditIcon />
                           </button>
                         <button
                           onClick={() => setUserToDelete(user)}
-                          disabled={user.id === currentUser.id || canMestreAct}
+                          disabled={isActionDisabled}
                           className="p-2 text-gray-400 hover:text-red-500 rounded-full transition-colors disabled:text-gray-600 disabled:cursor-not-allowed"
                           aria-label={`Excluir usuário ${user.name}`}
-                          title={user.id === currentUser.id ? 'Não é possível excluir a si mesmo' : canMestreAct ? 'Permissão negada' : 'Excluir usuário'}
+                          title={isActionDisabled ? disabledTitle : `Excluir usuário ${user.name}`}
                         >
                           <TrashIcon />
                         </button>
@@ -267,11 +275,17 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ users, currentU
               disabled={currentUser.role === 'mestre'}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-800 disabled:cursor-not-allowed"
             >
-              <option value="user">Usuário</option>
-              {currentUser.role === 'admin' && (
+              {currentUser.role === 'admin' ? (
+                 <>
+                    <option value="user">Usuário</option>
+                    <option value="mestre">Mestre</option>
+                    <option value="admin">Admin</option>
+                 </>
+              ) : (
                 <>
-                  <option value="admin">Admin</option>
-                  <option value="mestre">Mestre</option>
+                    <option value="user">Usuário</option>
+                    {/* A Mestre can see 'Mestre' if they are editing another mestre, but can't change it. */}
+                    {formData.role === 'mestre' && <option value="mestre">Mestre</option>}
                 </>
               )}
             </select>

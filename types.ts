@@ -91,5 +91,11 @@ export interface FinancialTransaction {
   categoryId: number;
 }
 
+export interface AITransactionResult {
+    success: boolean;
+    message: string;
+    transaction?: FinancialTransaction;
+}
+
 
 export type View = 'dashboard' | 'schedule' | 'announcements' | 'store' | 'booking' | 'promotions' | 'settings' | 'userManagement' | 'financial';

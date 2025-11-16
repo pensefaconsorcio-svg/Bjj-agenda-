@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { type Booking, type User, type TatameArea } from '../types';
 import Modal from './Modal';
@@ -93,7 +94,7 @@ const BookingView: React.FC<BookingViewProps> = ({ user, bookings, tatameAreas, 
     const [newAreaTimeSlots, setNewAreaTimeSlots] = useState<string[]>([]);
     const [newTimeSlotInput, setNewTimeSlotInput] = useState('');
 
-    const isAdmin = user.role === 'admin';
+    const isAdminOrMestre = user.role === 'admin' || user.role === 'mestre';
 
     const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSelectedDate(e.target.value);
@@ -163,7 +164,7 @@ const BookingView: React.FC<BookingViewProps> = ({ user, bookings, tatameAreas, 
         <>
             <div className="animate-fade-in-up">
                 <div className="flex justify-end items-center mb-6 space-x-4">
-                    {isAdmin && (
+                    {isAdminOrMestre && (
                         <button 
                             onClick={handleOpenAddAreaModal}
                             className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 shadow-sm"
@@ -189,13 +190,13 @@ const BookingView: React.FC<BookingViewProps> = ({ user, bookings, tatameAreas, 
                         <div key={area.id} className="bg-gray-800 border border-gray-700 rounded-xl p-6 shadow-sm">
                             <div className="flex justify-between items-center border-b-2 border-gray-700 pb-3 mb-5">
                                 <h2 
-                                    className={`text-2xl font-semibold text-gray-100 ${isAdmin ? 'cursor-pointer hover:text-red-400 transition-colors' : ''}`}
-                                    onClick={() => isAdmin && setEditingArea(area)}
-                                    title={isAdmin ? 'Clique para editar o nome da área' : ''}
+                                    className={`text-2xl font-semibold text-gray-100 ${isAdminOrMestre ? 'cursor-pointer hover:text-red-400 transition-colors' : ''}`}
+                                    onClick={() => isAdminOrMestre && setEditingArea(area)}
+                                    title={isAdminOrMestre ? 'Clique para editar o nome da área' : ''}
                                 >
                                     {area.name}
                                 </h2>
-                                {isAdmin && (
+                                {isAdminOrMestre && (
                                     <button 
                                         onClick={() => setEditingArea(area)} 
                                         className="p-2 text-gray-400 hover:text-red-500 rounded-full transition-colors"
@@ -219,7 +220,7 @@ const BookingView: React.FC<BookingViewProps> = ({ user, bookings, tatameAreas, 
                                             {booking ? (
                                                 <div className="flex items-center space-x-3">
                                                     {booking.status === 'pending' ? (
-                                                        isAdmin ? (
+                                                        isAdminOrMestre ? (
                                                             <>
                                                                 <div className="text-right"><span className="text-sm text-yellow-500 font-semibold truncate" title={booking.userEmail}>{booking.userEmail}</span></div>
                                                                 <button onClick={() => onUpdateBookingStatus(booking.id, 'deny')} className="p-1.5 text-red-500 hover:bg-red-900/50 rounded-full"><XCircleIcon /></button>
@@ -237,7 +238,7 @@ const BookingView: React.FC<BookingViewProps> = ({ user, bookings, tatameAreas, 
                                                                 <p className="text-sm font-semibold text-red-500">Reservado</p>
                                                                 <p className="text-xs text-gray-400 truncate" title={booking.userEmail}>{booking.userEmail}</p>
                                                             </div>
-                                                            {(isAdmin || canUserCancel) && <button onClick={() => handleCancelClick(booking)} className="p-2 text-gray-400 hover:text-white bg-red-900/50 hover:bg-red-600 rounded-full transition-colors" aria-label="Cancelar reserva"><TrashIcon /></button>}
+                                                            {(isAdminOrMestre || canUserCancel) && <button onClick={() => handleCancelClick(booking)} className="p-2 text-gray-400 hover:text-white bg-red-900/50 hover:bg-red-600 rounded-full transition-colors" aria-label="Cancelar reserva"><TrashIcon /></button>}
                                                         </>
                                                     )}
                                                 </div>

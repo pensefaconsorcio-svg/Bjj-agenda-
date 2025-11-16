@@ -83,7 +83,7 @@ const Sidebar: React.FC<SidebarProps> = ({
          {user.role === 'mestre' && (
           <NavItem view="financial" currentView={currentView} setCurrentView={setCurrentView} icon={<FinancialIcon />} label="Financeiro" isCollapsed={isCollapsed} />
         )}
-        {user.role === 'admin' && (
+        {(user.role === 'admin' || user.role === 'mestre') && (
           <NavItem view="settings" currentView={currentView} setCurrentView={setCurrentView} icon={<SettingsIcon />} label="Configurações" isCollapsed={isCollapsed} />
         )}
       </nav>

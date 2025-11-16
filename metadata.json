@@ -1,5 +1,7 @@
 {
   "name": "principal",
   "description": "An all-in-one application for Jiu-Jitsu academies to manage class schedules, post announcements, and sell merchandise through an integrated store. The UI is in Portuguese.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }

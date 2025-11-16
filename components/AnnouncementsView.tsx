@@ -22,7 +22,7 @@ const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ user, announcemen
   const [formData, setFormData] = useState(initialFormState);
   const [announcementToDelete, setAnnouncementToDelete] = useState<Announcement | null>(null);
 
-  const isAdmin = user.role === 'admin';
+  const isAdminOrMestre = user.role === 'admin' || user.role === 'mestre';
 
   const handleOpenAddModal = () => {
     setFormData(initialFormState);
@@ -56,7 +56,7 @@ const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ user, announcemen
   return (
     <>
       <div className="animate-fade-in-up">
-        {isAdmin && (
+        {isAdminOrMestre && (
           <div className="flex justify-end mb-6">
             <button
               onClick={handleOpenAddModal}
@@ -79,7 +79,7 @@ const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ user, announcemen
                   <p className="text-gray-300 mt-2 whitespace-pre-wrap">
                     {announcement.content}
                   </p>
-                  {isAdmin && (
+                  {isAdminOrMestre && (
                     <button
                       onClick={() => setAnnouncementToDelete(announcement)}
                       className="absolute top-4 right-4 p-2 text-gray-400 hover:text-red-500 bg-gray-700/50 rounded-full transition-all opacity-0 group-hover:opacity-100"
@@ -101,7 +101,7 @@ const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ user, announcemen
                 </div>
                 <h3 className="mt-5 text-xl font-semibold text-gray-200">Nenhum aviso publicado</h3>
                 <p className="mt-2 text-gray-400">Quando um novo aviso for adicionado, ele aparecerá aqui.</p>
-                {isAdmin && (
+                {isAdminOrMestre && (
                     <div className="mt-6">
                          <button
                             onClick={handleOpenAddModal}
