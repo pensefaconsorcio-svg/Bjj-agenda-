@@ -22,7 +22,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, siteSettings }) => {
             setLoginError('E-mail ou senha inválidos.');
         }
     };
-
+    
     return (
         <div className="min-h-screen bg-gray-900 flex font-sans">
             {/* Left side with image */}
@@ -46,7 +46,6 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, siteSettings }) => {
             {/* Right side with form */}
             <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
                 <div className="w-full max-w-md">
-                    {/* LOGIN FORM */}
                     <div className="animate-fade-in">
                         <div className="text-left mb-8">
                             <h2 className="text-3xl font-bold text-gray-100">Bem-vindo(a) de volta</h2>
@@ -61,13 +60,18 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, siteSettings }) => {
                                 <label htmlFor="password-login" className="block text-sm font-medium text-gray-300">Senha</label>
                                 <input id="password-login" name="password" type="password" autoComplete="current-password" required value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} className="mt-1 block w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="••••••••" />
                             </div>
+
                             {loginError && <p className="text-sm text-red-500 text-center">{loginError}</p>}
-                            <div className="text-xs text-gray-400 mt-2 p-3 bg-gray-800 rounded-md border border-gray-700">
-                                <p className="font-semibold text-gray-200">Credenciais de teste:</p>
-                                <p>Admin: <span className="font-mono text-gray-100">admin@bjj.com</span> / <span className="font-mono text-gray-100">admin123</span></p>
-                                <p>Mestre: <span className="font-mono text-gray-100">mestre@bjj.com</span> / <span className="font-mono text-gray-100">mestre123</span></p>
-                                <p>Usuário: <span className="font-mono text-gray-100">user@bjj.com</span> / <span className="font-mono text-gray-100">user123</span></p>
+                            
+                            <div className="mt-4 p-4 bg-gray-800 border border-gray-700 rounded-lg">
+                                <p className="text-sm font-medium text-gray-300 mb-2">Credenciais de teste:</p>
+                                <ul className="text-xs text-gray-400 space-y-1">
+                                    <li><strong>Admin:</strong> admin@bjj.com / admin123</li>
+                                    <li><strong>Mestre:</strong> mestre@bjj.com / mestre123</li>
+                                    <li><strong>Usuário:</strong> user@bjj.com / user123</li>
+                                </ul>
                             </div>
+
                             <div>
                                 <button type="submit" className="w-full flex justify-center py-3 px-4 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors duration-300">Entrar</button>
                             </div>

@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Header'; // Using Header file for Sidebar component
 import ScheduleView from './components/ScheduleView';
@@ -12,187 +13,13 @@ import DashboardView from './components/DashboardView';
 import PromotionsView from './components/PromotionsView';
 import SiteSettingsView from './components/SiteSettingsView';
 import UserManagementView from './components/UserManagementView';
+import FinancialView from './components/FinancialView';
 import CartModal from './components/CartModal';
 import CheckoutModal from './components/CheckoutModal';
-import { type View, type Product, type User, type ClassSession, type Booking, type Announcement, type PromotionPlan, type SiteSettings, type TatameArea, type CartItem } from './types';
+import { type View, type Product, type User, type ClassSession, type Booking, type Announcement, type PromotionPlan, type SiteSettings, type TatameArea, type CartItem, type FinancialTransaction, type TransactionCategory } from './types';
 import { ShoppingCartIcon } from './components/icons/ShoppingCartIcon';
 import { MenuIcon } from './components/icons/MenuIcon';
-
-// Helper to get initial state from localStorage or use default
-const getInitialState = <T extends object | boolean | string | number>(key: string, defaultValue: T): T => {
-    try {
-        const storedValue = localStorage.getItem(key);
-        if (storedValue) {
-            const parsed = JSON.parse(storedValue);
-            
-            // FIX: Handle type mismatches for primitive types stored in localStorage.
-            // Handle simple boolean/string values
-            if (typeof parsed !== 'object' || parsed === null) {
-                if (typeof parsed === typeof defaultValue) {
-                    return parsed;
-                }
-                // If types don't match, fall back to the default value.
-                return defaultValue;
-            }
-            // From here on, we know `parsed` is an object or array.
-
-            // Specific migration for paymentLink -> pixKey
-            if (key === 'bjjagenda-siteSettings' && parsed.paymentLink) {
-              delete parsed.paymentLink;
-            }
-
-            // Image URL migration
-            if (key === 'bjjagenda-siteSettings' && typeof parsed === 'object' && parsed !== null) {
-                if (parsed.logoUrl && typeof parsed.logoUrl === 'string' && !parsed.logoUrl.startsWith('data:')) {
-                    parsed.logoUrl = null;
-                }
-                if (parsed.loginImageUrl && typeof parsed.loginImageUrl === 'string' && !parsed.loginImageUrl.startsWith('data:')) {
-                    parsed.loginImageUrl = null;
-                }
-            }
-
-            // If default is an array, we expect parsed to be an array. Don't merge.
-            if (Array.isArray(defaultValue)) {
-                // FIX: Cast `parsed` to `T` to resolve the TypeScript error. This trusts that the
-                // data from localStorage has the correct array element type.
-                return Array.isArray(parsed) ? (parsed as T) : defaultValue;
-            }
-            
-            // For objects, merge to inherit new properties from default.
-            if (typeof defaultValue === 'object' && defaultValue !== null) {
-                 return { ...defaultValue, ...parsed };
-            }
-
-            // FIX: If `parsed` is an object but `defaultValue` is a primitive, there's a
-            // type mismatch in localStorage. Return the default value to avoid runtime errors.
-            return defaultValue;
-        }
-        return defaultValue;
-    } catch (error) {
-        console.error(`Error reading from localStorage for key ${key}:`, error);
-        return defaultValue;
-    }
-};
-
-const initialClasses: ClassSession[] = [
-  { id: 1, day: 'Segunda', time: '18:00 - 19:00', name: 'Gi Fundamentos', instructor: 'Professor Helio', level: 'Iniciante' },
-  { id: 2, day: 'Segunda', time: '19:00 - 20:30', name: 'Gi Avançado', instructor: 'Professor Rickson', level: 'Avançado' },
-  { id: 3, day: 'Terça', time: '07:00 - 08:00', name: 'No-Gi Todos os Níveis', instructor: 'Professor Royce', level: 'Todos' },
-  { id: 4, day: 'Terça', time: '19:00 - 20:30', name: 'Drills & Sparring', instructor: 'Professor Carlos', level: 'Todos' },
-  { id: 5, day: 'Quarta', time: '18:00 - 19:00', name: 'Gi Fundamentos', instructor: 'Professor Helio', level: 'Iniciante' },
-  { id: 6, day: 'Quarta', time: '19:00 - 20:30', name: 'No-Gi Avançado', instructor: 'Professor Rickson', level: 'Avançado' },
-  { id: 7, day: 'Quinta', time: '07:00 - 08:00', name: 'Gi Todos os Níveis', instructor: 'Professor Royce', level: 'Todos' },
-  { id: 8, day: 'Quinta', time: '19:00 - 20:30', name: 'Drills & Sparring', instructor: 'Professor Carlos', level: 'Todos' },
-  { id: 9, day: 'Sexta', time: '18:00 - 19:30', name: 'Open Mat', instructor: 'Geral', level: 'Todos' },
-  { id: 10, day: 'Sábado', time: '10:00 - 11:30', name: 'Gi Competição', instructor: 'Professor Rickson', level: 'Avançado' },
-];
-
-const initialProducts: Product[] = [
-  // Gis
-  { id: 1, name: 'Gi Azul Royal', price: 450.00, imageUrl: 'https://picsum.photos/seed/bjj-gi-blue/400/400', category: 'Gis' },
-  { id: 2, name: 'Gi Preto Competição', price: 550.00, imageUrl: 'https://picsum.photos/seed/bjj-gi-black/400/400', category: 'Gis' },
-  { id: 8, name: 'Gi Branco Clássico', price: 420.00, imageUrl: 'https://picsum.photos/seed/bjj-gi-white/400/400', category: 'Gis' },
-  
-  // Rashguards
-  { id: 3, name: 'Rashguard "Arte Suave"', price: 180.00, imageUrl: 'https://picsum.photos/seed/bjj-rashguard-art/400/400', category: 'Rashguards' },
-  { id: 4, name: 'Rashguard Logo Academia', price: 150.00, imageUrl: 'https://picsum.photos/seed/bjj-rashguard-logo/400/400', category: 'Rashguards' },
-  
-  // Vestuário (Apparel)
-  { id: 7, name: 'Bermuda No-Gi Preta', price: 120.00, imageUrl: 'https://picsum.photos/seed/bjj-shorts-black/400/400', category: 'Vestuário' },
-  { id: 9, name: 'Camiseta "Estilo BJJ"', price: 90.00, imageUrl: 'https://picsum.photos/seed/bjj-tshirt-style/400/400', category: 'Vestuário' },
-
-  // Acessórios
-  { id: 5, name: 'Faixa Preta Padrão', price: 80.00, imageUrl: 'https://picsum.photos/seed/bjj-belt-black/400/400', category: 'Acessórios' },
-  { id: 6, name: 'Mochila de Treino Grande', price: 250.00, imageUrl: 'https://picsum.photos/seed/bjj-gym-bag/400/400', category: 'Acessórios' },
-];
-
-const mockAnnouncements: Announcement[] = [
-  {
-    id: 1,
-    title: 'Novo Horário de Open Mat aos Domingos',
-    date: '15 de Julho, 204',
-    content: 'A partir deste mês, teremos um novo horário de Open Mat todos os domingos, das 10h às 12h. Aberto para todos os alunos e convidados de outras academias. Oss!',
-  },
-  {
-    id: 2,
-    title: 'Seminário com a Lenda do BJJ',
-    date: '10 de Julho, 2024',
-    content: 'No próximo dia 25 de Agosto, teremos a honra de receber uma lenda do esporte para um seminário exclusivo. As vagas são limitadas! Garanta a sua na recepção.',
-  },
-];
-
-const initialPromotions: PromotionPlan[] = [
-  {
-    id: 1,
-    name: 'Plano Mensal',
-    price: 150,
-    duration: 'mês',
-    total: null,
-    features: ['Acesso ilimitado às aulas', 'Todas as modalidades inclusas', 'Sem taxa de matrícula'],
-    isBestValue: false,
-  },
-  {
-    id: 2,
-    name: 'Plano Trimestral',
-    price: 135,
-    duration: 'mês',
-    total: 405,
-    features: ['Acesso ilimitado às aulas', 'Todas as modalidades inclusas', 'Sem taxa de matrícula', 'Desconto de 10%'],
-    isBestValue: false,
-  },
-  {
-    id: 3,
-    name: 'Plano Semestral',
-    price: 120,
-    duration: 'mês',
-    total: 720,
-    features: ['Acesso ilimitado às aulas', 'Todas as modalidades inclusas', 'Sem taxa de matrícula', 'Desconto de 20%'],
-    isBestValue: true,
-  },
-];
-
-const initialTatameAreas: TatameArea[] = [
-  { 
-    id: 'tatame-principal', 
-    name: 'Tatame Principal', 
-    timeSlots: [
-      '08:00 - 09:00', '09:00 - 10:00', '10:00 - 11:00', '11:00 - 12:00',
-      '13:00 - 14:00', '14:00 - 15:00',
-    ] 
-  },
-  { 
-    id: 'area-sparring', 
-    name: 'Área de Sparring', 
-    timeSlots: [
-      '08:00 - 09:00', '09:00 - 10:00', '10:00 - 11:00', '11:00 - 12:00',
-      '13:00 - 14:00', '14:00 - 15:00',
-    ]
-  },
-];
-
-const initialSiteSettings: SiteSettings = {
-  academyName: 'BJJAgenda',
-  instagramUrl: '#',
-  facebookUrl: '#',
-  xUrl: '#',
-  whatsappUrl: '#',
-  pixKey: 'chave-pix-aleatoria-exemplo@banco.com',
-  paymentInstructions: 'Após o pagamento, por favor envie o comprovante para o nosso WhatsApp: (XX) 9XXXX-XXXX para confirmarmos seu pedido.',
-  logoUrl: null,
-  loginImageUrl: null,
-};
-
-const initialUsers: User[] = [
-    { id: 1, email: 'admin@bjj.com', name: 'Administrador', role: 'admin', paymentDueDate: null },
-    { id: 2, email: 'user@bjj.com', name: 'Aluno Exemplo', role: 'user', paymentDueDate: '2024-08-15' },
-    { id: 3, email: 'mestre@bjj.com', name: 'Mestre Academia', role: 'mestre', paymentDueDate: null },
-];
-
-const initialCredentials: { [email: string]: string } = {
-    'admin@bjj.com': 'admin123',
-    'user@bjj.com': 'user123',
-    'mestre@bjj.com': 'mestre123',
-};
+import { db } from './db';
 
 
 const viewTitles: Record<View, string> = {
@@ -204,6 +31,7 @@ const viewTitles: Record<View, string> = {
   promotions: 'Promoções e Planos',
   settings: 'Configurações da Academia',
   userManagement: 'Gerenciamento de Usuários',
+  financial: 'Financeiro',
 };
 
 const PageHeader: React.FC<{ 
@@ -257,35 +85,37 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  // FIX: Explicitly set the type to boolean to prevent incorrect type inference from getInitialState.
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => getInitialState('bjjagenda-sidebarCollapsed', false));
-  // FIX: Explicitly set the type to boolean to prevent incorrect type inference.
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
   // Persisted state
-  const [users, setUsers] = useState<User[]>(() => getInitialState('bjjagenda-users', initialUsers));
-  const [credentials, setCredentials] = useState<{ [email: string]: string }>(() => getInitialState('bjjagenda-credentials', initialCredentials));
-  const [classes, setClasses] = useState<ClassSession[]>(() => getInitialState('bjjagenda-classes', initialClasses));
-  const [products, setProducts] = useState<Product[]>(() => getInitialState('bjjagenda-products', initialProducts));
-  const [announcements, setAnnouncements] = useState<Announcement[]>(() => getInitialState('bjjagenda-announcements', mockAnnouncements));
-  const [bookings, setBookings] = useState<Booking[]>(() => getInitialState('bjjagenda-bookings', []));
-  const [promotions, setPromotions] = useState<PromotionPlan[]>(() => getInitialState('bjjagenda-promotions', initialPromotions));
-  const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => getInitialState('bjjagenda-siteSettings', initialSiteSettings));
-  const [tatameAreas, setTatameAreas] = useState<TatameArea[]>(() => getInitialState('bjjagenda-tatameAreas', initialTatameAreas));
-  const [cart, setCart] = useState<CartItem[]>(() => getInitialState('bjjagenda-cart', []));
+  const [users, setUsers] = useState<User[]>(() => db.users.getAll());
+  const [credentials, setCredentials] = useState<{ [email: string]: string }>(() => db.credentials.getAll());
+  const [classes, setClasses] = useState<ClassSession[]>(() => db.classes.getAll());
+  const [products, setProducts] = useState<Product[]>(() => db.products.getAll());
+  const [announcements, setAnnouncements] = useState<Announcement[]>(() => db.announcements.getAll());
+  const [bookings, setBookings] = useState<Booking[]>(() => db.bookings.getAll());
+  const [promotions, setPromotions] = useState<PromotionPlan[]>(() => db.promotions.getAll());
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => db.siteSettings.getAll());
+  const [tatameAreas, setTatameAreas] = useState<TatameArea[]>(() => db.tatameAreas.getAll());
+  const [cart, setCart] = useState<CartItem[]>(() => db.cart.getAll());
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => db.sidebar.isCollapsed());
+  const [financialTransactions, setFinancialTransactions] = useState<FinancialTransaction[]>(() => db.financialTransactions.getAll());
+  const [financialCategories, setFinancialCategories] = useState<TransactionCategory[]>(() => db.financialCategories.getAll());
 
   // Save state changes to localStorage
-  useEffect(() => { localStorage.setItem('bjjagenda-users', JSON.stringify(users)); }, [users]);
-  useEffect(() => { localStorage.setItem('bjjagenda-credentials', JSON.stringify(credentials)); }, [credentials]);
-  useEffect(() => { localStorage.setItem('bjjagenda-classes', JSON.stringify(classes)); }, [classes]);
-  useEffect(() => { localStorage.setItem('bjjagenda-products', JSON.stringify(products)); }, [products]);
-  useEffect(() => { localStorage.setItem('bjjagenda-announcements', JSON.stringify(announcements)); }, [announcements]);
-  useEffect(() => { localStorage.setItem('bjjagenda-bookings', JSON.stringify(bookings)); }, [bookings]);
-  useEffect(() => { localStorage.setItem('bjjagenda-promotions', JSON.stringify(promotions)); }, [promotions]);
-  useEffect(() => { localStorage.setItem('bjjagenda-siteSettings', JSON.stringify(siteSettings)); }, [siteSettings]);
-  useEffect(() => { localStorage.setItem('bjjagenda-tatameAreas', JSON.stringify(tatameAreas)); }, [tatameAreas]);
-  useEffect(() => { localStorage.setItem('bjjagenda-cart', JSON.stringify(cart)); }, [cart]);
-  useEffect(() => { localStorage.setItem('bjjagenda-sidebarCollapsed', JSON.stringify(isSidebarCollapsed)); }, [isSidebarCollapsed]);
+  useEffect(() => { db.users.saveAll(users); }, [users]);
+  useEffect(() => { db.credentials.saveAll(credentials); }, [credentials]);
+  useEffect(() => { db.classes.saveAll(classes); }, [classes]);
+  useEffect(() => { db.products.saveAll(products); }, [products]);
+  useEffect(() => { db.announcements.saveAll(announcements); }, [announcements]);
+  useEffect(() => { db.bookings.saveAll(bookings); }, [bookings]);
+  useEffect(() => { db.promotions.saveAll(promotions); }, [promotions]);
+  useEffect(() => { db.siteSettings.saveAll(siteSettings); }, [siteSettings]);
+  useEffect(() => { db.tatameAreas.saveAll(tatameAreas); }, [tatameAreas]);
+  useEffect(() => { db.cart.saveAll(cart); }, [cart]);
+  useEffect(() => { db.sidebar.saveCollapsed(isSidebarCollapsed); }, [isSidebarCollapsed]);
+  useEffect(() => { db.financialTransactions.saveAll(financialTransactions); }, [financialTransactions]);
+  useEffect(() => { db.financialCategories.saveAll(financialCategories); }, [financialCategories]);
 
 
   const handleLogin = (userCredentials: { email: string, pass: string }): boolean => {
@@ -298,31 +128,6 @@ const App: React.FC = () => {
       return true;
     }
     return false;
-  };
-
-  const handleRegister = (newUserData: { email: string; pass: string; name: string }): User | null => {
-    if (users.some(u => u.email === newUserData.email)) {
-      alert('Este e-mail já está cadastrado.');
-      return null;
-    }
-    const today = new Date();
-    today.setDate(today.getDate() + 30); // Set due date 30 days from now
-    const dueDate = today.toISOString().split('T')[0];
-
-    const newUser: User = {
-      id: Date.now(),
-      email: newUserData.email,
-      name: newUserData.name,
-      role: 'user',
-      paymentDueDate: dueDate,
-    };
-    setUsers(prev => [...prev, newUser]);
-    setCredentials(prev => ({ ...prev, [newUserData.email]: newUserData.pass }));
-
-    // Automatically log in the new user
-    setCurrentUser(newUser);
-    setCurrentView('dashboard');
-    return newUser;
   };
 
   // User Management by Admin
@@ -554,6 +359,31 @@ const App: React.FC = () => {
     alert('Configurações salvas com sucesso!');
     setCurrentView('dashboard');
   };
+  
+  // Financial Management
+  const handleAddTransaction = (newTransaction: Omit<FinancialTransaction, 'id'>) => {
+    setFinancialTransactions(prev => [...prev, { ...newTransaction, id: Date.now() }]);
+  };
+  
+  const handleDeleteTransaction = (transactionId: number) => {
+    setFinancialTransactions(prev => prev.filter(t => t.id !== transactionId));
+  };
+
+  const handleAddCategory = (newCategory: Omit<TransactionCategory, 'id'>) => {
+    setFinancialCategories(prev => [...prev, { ...newCategory, id: Date.now() }]);
+  };
+
+  const handleUpdateCategory = (updatedCategory: TransactionCategory) => {
+    setFinancialCategories(prev => prev.map(c => c.id === updatedCategory.id ? updatedCategory : c));
+  };
+  
+  const handleDeleteCategory = (categoryId: number) => {
+    if (financialTransactions.some(t => t.categoryId === categoryId)) {
+        alert('Não é possível excluir uma categoria que já está em uso por uma transação.');
+        return;
+    }
+    setFinancialCategories(prev => prev.filter(c => c.id !== categoryId));
+  };
 
   const renderView = () => {
     switch (currentView) {
@@ -622,6 +452,17 @@ const App: React.FC = () => {
                   onCreateUser={handleCreateUser}
                   onUpdateUser={handleUpdateUser}
                   onDeleteUser={handleDeleteUser}
+                />;
+      case 'financial':
+        return <FinancialView
+                  users={users}
+                  transactions={financialTransactions}
+                  categories={financialCategories}
+                  onAddTransaction={handleAddTransaction}
+                  onDeleteTransaction={handleDeleteTransaction}
+                  onAddCategory={handleAddCategory}
+                  onUpdateCategory={handleUpdateCategory}
+                  onDeleteCategory={handleDeleteCategory}
                 />;
       default:
         return <DashboardView 

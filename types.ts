@@ -1,4 +1,5 @@
 
+
 export interface User {
   id: number;
   email: string;
@@ -74,4 +75,21 @@ export interface SiteSettings {
   loginImageUrl: string | null;
 }
 
-export type View = 'dashboard' | 'schedule' | 'announcements' | 'store' | 'booking' | 'promotions' | 'settings' | 'userManagement';
+export interface TransactionCategory {
+  id: number;
+  name: string;
+  type: 'income' | 'expense';
+  emoji: string;
+}
+
+export interface FinancialTransaction {
+  id: number;
+  description: string;
+  amount: number;
+  date: string; // YYYY-MM-DD
+  type: 'income' | 'expense';
+  categoryId: number;
+}
+
+
+export type View = 'dashboard' | 'schedule' | 'announcements' | 'store' | 'booking' | 'promotions' | 'settings' | 'userManagement' | 'financial';
