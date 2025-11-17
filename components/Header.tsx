@@ -87,7 +87,7 @@ const Sidebar: React.FC = () => {
         {(user.role === 'admin' || user.role === 'mestre') && (
           <NavItem view="userManagement" currentView={currentView} setCurrentView={setCurrentView} icon={<UsersIcon />} label="Usuários" isCollapsed={isCollapsed} />
         )}
-         {user.role === 'mestre' && (
+         {(user.role === 'admin' || user.role === 'mestre') && (
           <NavItem view="financial" currentView={currentView} setCurrentView={setCurrentView} icon={<FinancialIcon />} label="Financeiro" isCollapsed={isCollapsed} />
         )}
         {(user.role === 'admin' || user.role === 'mestre') && (

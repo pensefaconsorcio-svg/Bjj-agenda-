@@ -441,8 +441,9 @@ export const useAppStore = create<AppState>()(
           toast.success('Categoria adicionada com sucesso!');
       },
       updateCategory: async (updatedCategory) => {
-          // Dexie doesn't have an update method, use put
-          await db.financialCategories.add(updatedCategory); // Assuming add handles update on primary key conflict
+          // Dexie's `add` method throws if the key exists. `put` is used for add/update.
+          // Using the `update` wrapper method which calls `put`.
+          await db.financialCategories.update(updatedCategory);
           set(state => ({ financialCategories: state.financialCategories.map(c => c.id === updatedCategory.id ? updatedCategory : c) }));
           toast.success('Categoria atualizada!');
       },

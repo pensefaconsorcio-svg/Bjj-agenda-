@@ -1,5 +1,5 @@
 // Fix: Switched to a default import for Dexie to resolve class extension issues.
-import Dexie, { type Table } from 'dexie';
+import { Dexie, type Table } from 'dexie';
 import { type User, type ClassSession, type Announcement, type Product, type CartItem, type Booking, type TatameArea, type PromotionPlan, type SiteSettings, type TransactionCategory, type FinancialTransaction, type Belt } from './types';
 
 // --- INITIAL DATA ---
@@ -244,6 +244,7 @@ export const db = {
   financialCategories: {
     getAll: () => dexieDB.financialCategories.toArray(),
     add: (data: TransactionCategory) => dexieDB.financialCategories.add(data),
+    update: (data: TransactionCategory) => dexieDB.financialCategories.put(data),
     delete: (id: number) => dexieDB.financialCategories.delete(id),
   },
 };
