@@ -258,29 +258,35 @@ export const useAppStore = create<AppState>()(
       addClass: async (newClass) => {
         const classToAdd = { ...newClass, id: Date.now() };
         await db.classes.add(classToAdd);
-        set(state => ({ classes: [...state.classes, classToAdd] }))
+        set(state => ({ classes: [...state.classes, classToAdd] }));
+        toast.success('Aula adicionada com sucesso!');
       },
       updateClass: async (updatedClass) => {
         await db.classes.update(updatedClass);
-        set(state => ({ classes: state.classes.map(c => c.id === updatedClass.id ? updatedClass : c) }))
+        set(state => ({ classes: state.classes.map(c => c.id === updatedClass.id ? updatedClass : c) }));
+        toast.success('Aula atualizada com sucesso!');
       },
       deleteClass: async (classId) => {
         await db.classes.delete(classId);
         set(state => ({ classes: state.classes.filter(c => c.id !== classId) }));
+        toast.success('Aula excluída com sucesso!');
       },
 
       addProduct: async (newProduct) => {
           const productToAdd = { ...newProduct, id: Date.now() };
           await db.products.add(productToAdd);
-          set(state => ({ products: [...state.products, productToAdd] }))
+          set(state => ({ products: [...state.products, productToAdd] }));
+          toast.success('Produto adicionado com sucesso!');
       },
       updateProduct: async (updatedProduct) => {
           await db.products.update(updatedProduct);
-          set(state => ({ products: state.products.map(p => p.id === updatedProduct.id ? updatedProduct : p) }))
+          set(state => ({ products: state.products.map(p => p.id === updatedProduct.id ? updatedProduct : p) }));
+          toast.success('Produto atualizado com sucesso!');
       },
       deleteProduct: async (productId) => {
           await db.products.delete(productId);
-          set(state => ({ products: state.products.filter(p => p.id !== productId) }))
+          set(state => ({ products: state.products.filter(p => p.id !== productId) }));
+          toast.success('Produto excluído com sucesso!');
       },
 
       addToCart: async (product) => {
@@ -329,10 +335,12 @@ export const useAppStore = create<AppState>()(
         };
         await db.announcements.add(newAnnouncement);
         set(state => ({ announcements: [newAnnouncement, ...state.announcements].sort((a,b) => b.id - a.id) }));
+        toast.success('Aviso publicado com sucesso!');
       },
       deleteAnnouncement: async (announcementId) => {
           await db.announcements.delete(announcementId);
-          set(state => ({ announcements: state.announcements.filter(a => a.id !== announcementId) }))
+          set(state => ({ announcements: state.announcements.filter(a => a.id !== announcementId) }));
+          toast.success('Aviso excluído com sucesso!');
       },
 
       bookTatame: async (bookingDetails) => {
@@ -359,23 +367,27 @@ export const useAppStore = create<AppState>()(
       cancelBooking: async (bookingId) => {
         await db.bookings.delete(bookingId);
         set(state => ({ bookings: state.bookings.filter(b => b.id !== bookingId) }));
+        toast.success('Reserva cancelada.');
       },
       updateBookingStatus: async (bookingId, action) => {
         if (action === 'deny') {
           await db.bookings.delete(bookingId);
           set(state => ({ bookings: state.bookings.filter(b => b.id !== bookingId) }));
+          toast.error('Solicitação de reserva negada.');
         } else {
           const bookingToUpdate = get().bookings.find(b => b.id === bookingId);
           if(bookingToUpdate) {
               const updatedBooking = { ...bookingToUpdate, status: 'confirmed' as 'confirmed' };
               await db.bookings.update(updatedBooking);
               set(state => ({ bookings: state.bookings.map(b => (b.id === bookingId ? updatedBooking : b)) }));
+              toast.success('Reserva confirmada com sucesso!');
           }
         }
       },
       updateTatameAreas: async (updatedAreas) => {
         await db.tatameAreas.saveAll(updatedAreas);
         set({ tatameAreas: updatedAreas });
+        toast.success('Áreas de tatame salvas!');
       },
       addTatameArea: async (areaData) => {
         const newArea: TatameArea = {
@@ -385,45 +397,54 @@ export const useAppStore = create<AppState>()(
         const currentAreas = get().tatameAreas;
         await db.tatameAreas.saveAll([...currentAreas, newArea]);
         set(state => ({ tatameAreas: [...state.tatameAreas, newArea] }));
+        toast.success('Área de tatame adicionada!');
       },
 
       addPromotion: async (newPlan) => {
         const planToAdd = { ...newPlan, id: Date.now() };
         await db.promotions.add(planToAdd);
-        set(state => ({ promotions: [...state.promotions, planToAdd] }))
+        set(state => ({ promotions: [...state.promotions, planToAdd] }));
+        toast.success('Plano adicionado com sucesso!');
       },
       updatePromotion: async (updatedPlan) => {
           await db.promotions.update(updatedPlan);
-          set(state => ({ promotions: state.promotions.map(p => p.id === updatedPlan.id ? updatedPlan : p) }))
+          set(state => ({ promotions: state.promotions.map(p => p.id === updatedPlan.id ? updatedPlan : p) }));
+          toast.success('Plano atualizado com sucesso!');
       },
       deletePromotion: async (planId) => {
           await db.promotions.delete(planId);
-          set(state => ({ promotions: state.promotions.filter(p => p.id !== planId) }))
+          set(state => ({ promotions: state.promotions.filter(p => p.id !== planId) }));
+          toast.success('Plano excluído com sucesso!');
       },
 
       updateSiteSettings: async (newSettings) => {
         await db.siteSettings.save(newSettings);
         set({ siteSettings: newSettings });
+        toast.success('Configurações salvas com sucesso!');
       },
 
       addTransaction: async (newTransaction) => {
           const transactionToAdd = { ...newTransaction, id: Date.now() };
           await db.financialTransactions.add(transactionToAdd);
           set(state => ({ financialTransactions: [...state.financialTransactions, transactionToAdd] }));
+          toast.success('Transação adicionada com sucesso!');
       },
       deleteTransaction: async (transactionId) => {
           await db.financialTransactions.delete(transactionId);
-          set(state => ({ financialTransactions: state.financialTransactions.filter(t => t.id !== transactionId) }))
+          set(state => ({ financialTransactions: state.financialTransactions.filter(t => t.id !== transactionId) }));
+          toast.success('Transação removida com sucesso!');
       },
       addCategory: async (newCategory) => {
           const categoryToAdd = { ...newCategory, id: Date.now() };
           await db.financialCategories.add(categoryToAdd);
           set(state => ({ financialCategories: [...state.financialCategories, categoryToAdd] }));
+          toast.success('Categoria adicionada com sucesso!');
       },
       updateCategory: async (updatedCategory) => {
           // Dexie doesn't have an update method, use put
           await db.financialCategories.add(updatedCategory); // Assuming add handles update on primary key conflict
           set(state => ({ financialCategories: state.financialCategories.map(c => c.id === updatedCategory.id ? updatedCategory : c) }));
+          toast.success('Categoria atualizada!');
       },
       deleteCategory: async (categoryId) => {
         if (get().financialTransactions.some(t => t.categoryId === categoryId)) {
@@ -432,6 +453,7 @@ export const useAppStore = create<AppState>()(
         }
         await db.financialCategories.delete(categoryId);
         set(state => ({ financialCategories: state.financialCategories.filter(c => c.id !== categoryId) }));
+        toast.success('Categoria removida com sucesso!');
         return true;
       },
       
@@ -467,11 +489,11 @@ export const useAppStore = create<AppState>()(
         };
         await updateUser(updatedUser);
         
-        toast.success(`Plano ${plan.name} assinado com sucesso!`);
+        // Don't show success toast here, it's handled in the payment modal.
       },
 
       processCartCheckout: async () => {
-        const { cart, currentUser, addTransaction, clearCart, closeCheckout } = get();
+        const { cart, currentUser, addTransaction, clearCart } = get();
         if (!currentUser || cart.length === 0) return;
 
         const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -484,8 +506,7 @@ export const useAppStore = create<AppState>()(
         });
 
         await clearCart();
-        closeCheckout();
-        toast.success('Compra finalizada com sucesso!');
+        // Don't show success toast here, it's handled in the checkout modal.
       },
     })
 );

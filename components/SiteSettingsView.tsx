@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { type SiteSettings } from '../types';
+import { SpinnerIcon } from './icons/SpinnerIcon';
 import { useAppStore } from '../store';
 
 const SiteSettingsView: React.FC = () => {
@@ -9,6 +10,7 @@ const SiteSettingsView: React.FC = () => {
   }));
   
   const [settings, setSettings] = useState<SiteSettings>(currentSettings);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setSettings(currentSettings);
@@ -31,9 +33,14 @@ const SiteSettingsView: React.FC = () => {
   };
 
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateSiteSettings(settings);
+    setIsSaving(true);
+    try {
+        await updateSiteSettings(settings);
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   return (
@@ -205,9 +212,10 @@ const SiteSettingsView: React.FC = () => {
           <div className="pt-6 flex justify-end">
             <button 
               type="submit" 
-              className="px-6 py-2.5 rounded-lg text-white font-semibold bg-red-600 hover:bg-red-700 transition-colors"
+              disabled={isSaving}
+              className="flex items-center justify-center w-48 px-6 py-2.5 rounded-lg text-white font-semibold bg-red-600 hover:bg-red-700 transition-colors disabled:bg-red-800"
             >
-              Salvar Alterações
+              {isSaving ? <SpinnerIcon /> : 'Salvar Alterações'}
             </button>
           </div>
         </form>

@@ -187,6 +187,7 @@ const PromotionsView: React.FC = () => {
   const [formData, setFormData] = useState<Omit<PromotionPlan, 'id'>>(initialFormState);
   const [featuresString, setFeaturesString] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<PromotionPlan | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const isAdminOrMestre = user.role === 'admin' || user.role === 'mestre';
 
@@ -228,15 +229,20 @@ const PromotionsView: React.FC = () => {
       setFeaturesString(e.target.value);
   }
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
     const finalPlanData = { ...formData, features: featuresString.split(',').map(f => f.trim()).filter(f => f) };
-    if (editingPlan) {
-      updatePromotion({ ...finalPlanData, id: editingPlan.id });
-    } else {
-      addPromotion(finalPlanData);
+    try {
+        if (editingPlan) {
+            await updatePromotion({ ...finalPlanData, id: editingPlan.id });
+        } else {
+            await addPromotion(finalPlanData);
+        }
+        handleCloseFormModal();
+    } finally {
+        setIsSaving(false);
     }
-    handleCloseFormModal();
   };
 
   const handleDelete = (planId: number) => {
@@ -340,7 +346,9 @@ const PromotionsView: React.FC = () => {
           </div>
           <div className="mt-6 flex justify-end space-x-4 pt-4">
             <button type="button" onClick={handleCloseFormModal} className="px-4 py-2 rounded-md text-gray-200 bg-gray-600 hover:bg-gray-500">Cancelar</button>
-            <button type="submit" className="px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700">Salvar</button>
+            <button type="submit" disabled={isSaving} className="flex items-center justify-center w-28 px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700 disabled:bg-red-800">
+                {isSaving ? <SpinnerIcon /> : 'Salvar'}
+            </button>
           </div>
         </form>
       </Modal>

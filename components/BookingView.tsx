@@ -6,6 +6,8 @@ import { EditIcon } from './icons/EditIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
 import { XCircleIcon } from './icons/XCircleIcon';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
+import { TatameIcon } from './icons/TatameIcon';
+import EmptyState from './EmptyState';
 import { useAppStore } from '../store';
 
 const formatDateForInput = (date: Date): string => {
@@ -168,6 +170,98 @@ const BookingView: React.FC = () => {
     // ------------------------------------------
 
     const bookingsForSelectedDate = bookings.filter(b => b.date === selectedDate);
+
+    const renderContent = () => {
+        if (tatameAreas.length === 0 && isAdminOrMestre) {
+            return (
+                <EmptyState
+                    icon={<TatameIcon />}
+                    title="Nenhuma área de tatame configurada"
+                    message="Para permitir que os alunos reservem horários, você precisa primeiro adicionar uma área de tatame e seus horários disponíveis."
+                    actionButton={
+                         <button 
+                            onClick={handleOpenAddAreaModal}
+                            className="flex items-center mx-auto space-x-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 shadow-sm"
+                        >
+                            <PlusCircleIcon />
+                            <span>Adicionar primeira área</span>
+                        </button>
+                    }
+                />
+            )
+        }
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {tatameAreas.map(area => (
+                    <div key={area.id} className="bg-gray-800 border border-gray-700 rounded-xl p-6 shadow-sm">
+                        <div className="flex justify-between items-center border-b-2 border-gray-700 pb-3 mb-5">
+                            <h2 
+                                className={`text-2xl font-semibold text-gray-100 ${isAdminOrMestre ? 'cursor-pointer hover:text-red-400 transition-colors' : ''}`}
+                                onClick={() => isAdminOrMestre && setEditingArea(area)}
+                                title={isAdminOrMestre ? 'Clique para editar o nome da área' : ''}
+                            >
+                                {area.name}
+                            </h2>
+                            {isAdminOrMestre && (
+                                <button 
+                                    onClick={() => setEditingArea(area)} 
+                                    className="p-2 text-gray-400 hover:text-red-500 rounded-full transition-colors"
+                                    aria-label={`Editar área ${area.name}`}
+                                >
+                                    <EditIcon />
+                                </button>
+                            )}
+                        </div>
+                        <div className="space-y-3">
+                            {area.timeSlots.map(timeSlot => {
+                                const booking = bookingsForSelectedDate.find(
+                                    b => b.tatameId === area.id && b.timeSlot === timeSlot
+                                );
+
+                                const canUserCancel = booking && booking.userId === user.id;
+
+                                return (
+                                    <div key={timeSlot} className={`p-3 rounded-lg flex items-center justify-between transition-colors duration-200 ${booking ? 'bg-gray-900' : 'bg-gray-800 hover:bg-gray-700'}`}>
+                                        <span className="font-mono text-gray-300">{timeSlot}</span>
+                                        {booking ? (
+                                            <div className="flex items-center space-x-3">
+                                                {booking.status === 'pending' ? (
+                                                    isAdminOrMestre ? (
+                                                        <>
+                                                            <div className="text-right"><span className="text-sm text-yellow-500 font-semibold truncate" title={booking.userEmail}>{booking.userEmail}</span></div>
+                                                            <button onClick={() => updateBookingStatus(booking.id, 'deny')} className="p-1.5 text-red-500 hover:bg-red-900/50 rounded-full"><XCircleIcon /></button>
+                                                            <button onClick={() => updateBookingStatus(booking.id, 'confirm')} className="p-1.5 text-green-500 hover:bg-green-900/50 rounded-full"><CheckCircleIcon /></button>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <span className="text-sm font-semibold text-yellow-500">Pendente</span>
+                                                            {canUserCancel && <button onClick={() => handleCancelClick(booking)} className="p-2 text-gray-400 hover:text-white bg-red-900/50 hover:bg-red-600 rounded-full transition-colors" aria-label="Cancelar solicitação"><TrashIcon /></button>}
+                                                        </>
+                                                    )
+                                                ) : ( // Confirmed
+                                                    <>
+                                                        <div className="text-right">
+                                                            <p className="text-sm font-semibold text-red-500">Reservado</p>
+                                                            <p className="text-xs text-gray-400 truncate" title={booking.userEmail}>{booking.userEmail}</p>
+                                                        </div>
+                                                        {(isAdminOrMestre || canUserCancel) && <button onClick={() => handleCancelClick(booking)} className="p-2 text-gray-400 hover:text-white bg-red-900/50 hover:bg-red-600 rounded-full transition-colors" aria-label="Cancelar reserva"><TrashIcon /></button>}
+                                                    </>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <button onClick={() => handleBookClick(area.id, area.name, timeSlot)} className="text-sm font-semibold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-md transition-all shadow-sm">
+                                                Reservar
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        )
+    }
   
     return (
         <>
@@ -194,75 +288,7 @@ const BookingView: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {tatameAreas.map(area => (
-                        <div key={area.id} className="bg-gray-800 border border-gray-700 rounded-xl p-6 shadow-sm">
-                            <div className="flex justify-between items-center border-b-2 border-gray-700 pb-3 mb-5">
-                                <h2 
-                                    className={`text-2xl font-semibold text-gray-100 ${isAdminOrMestre ? 'cursor-pointer hover:text-red-400 transition-colors' : ''}`}
-                                    onClick={() => isAdminOrMestre && setEditingArea(area)}
-                                    title={isAdminOrMestre ? 'Clique para editar o nome da área' : ''}
-                                >
-                                    {area.name}
-                                </h2>
-                                {isAdminOrMestre && (
-                                    <button 
-                                        onClick={() => setEditingArea(area)} 
-                                        className="p-2 text-gray-400 hover:text-red-500 rounded-full transition-colors"
-                                        aria-label={`Editar área ${area.name}`}
-                                    >
-                                        <EditIcon />
-                                    </button>
-                                )}
-                            </div>
-                            <div className="space-y-3">
-                                {area.timeSlots.map(timeSlot => {
-                                    const booking = bookingsForSelectedDate.find(
-                                        b => b.tatameId === area.id && b.timeSlot === timeSlot
-                                    );
-
-                                    const canUserCancel = booking && booking.userId === user.id;
-
-                                    return (
-                                        <div key={timeSlot} className={`p-3 rounded-lg flex items-center justify-between transition-colors duration-200 ${booking ? 'bg-gray-900' : 'bg-gray-800 hover:bg-gray-700'}`}>
-                                            <span className="font-mono text-gray-300">{timeSlot}</span>
-                                            {booking ? (
-                                                <div className="flex items-center space-x-3">
-                                                    {booking.status === 'pending' ? (
-                                                        isAdminOrMestre ? (
-                                                            <>
-                                                                <div className="text-right"><span className="text-sm text-yellow-500 font-semibold truncate" title={booking.userEmail}>{booking.userEmail}</span></div>
-                                                                <button onClick={() => updateBookingStatus(booking.id, 'deny')} className="p-1.5 text-red-500 hover:bg-red-900/50 rounded-full"><XCircleIcon /></button>
-                                                                <button onClick={() => updateBookingStatus(booking.id, 'confirm')} className="p-1.5 text-green-500 hover:bg-green-900/50 rounded-full"><CheckCircleIcon /></button>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <span className="text-sm font-semibold text-yellow-500">Pendente</span>
-                                                                {canUserCancel && <button onClick={() => handleCancelClick(booking)} className="p-2 text-gray-400 hover:text-white bg-red-900/50 hover:bg-red-600 rounded-full transition-colors" aria-label="Cancelar solicitação"><TrashIcon /></button>}
-                                                            </>
-                                                        )
-                                                    ) : ( // Confirmed
-                                                        <>
-                                                            <div className="text-right">
-                                                                <p className="text-sm font-semibold text-red-500">Reservado</p>
-                                                                <p className="text-xs text-gray-400 truncate" title={booking.userEmail}>{booking.userEmail}</p>
-                                                            </div>
-                                                            {(isAdminOrMestre || canUserCancel) && <button onClick={() => handleCancelClick(booking)} className="p-2 text-gray-400 hover:text-white bg-red-900/50 hover:bg-red-600 rounded-full transition-colors" aria-label="Cancelar reserva"><TrashIcon /></button>}
-                                                        </>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <button onClick={() => handleBookClick(area.id, area.name, timeSlot)} className="text-sm font-semibold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-md transition-all shadow-sm">
-                                                    Reservar
-                                                </button>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                {renderContent()}
             </div>
 
             <Modal isOpen={!!confirmingBooking} onClose={() => setConfirmingBooking(null)} title="Confirmar Solicitação de Reserva">

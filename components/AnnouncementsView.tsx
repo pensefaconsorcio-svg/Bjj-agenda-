@@ -3,6 +3,9 @@ import { type Announcement } from '../types';
 import Modal from './Modal';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { TrashIcon } from './icons/TrashIcon';
+import { MegaphoneIcon } from './icons/MegaphoneIcon';
+import { SpinnerIcon } from './icons/SpinnerIcon';
+import EmptyState from './EmptyState';
 import { useAppStore } from '../store';
 
 const initialFormState = {
@@ -21,6 +24,7 @@ const AnnouncementsView: React.FC = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [formData, setFormData] = useState(initialFormState);
   const [announcementToDelete, setAnnouncementToDelete] = useState<Announcement | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const isAdminOrMestre = user.role === 'admin' || user.role === 'mestre';
 
@@ -38,11 +42,16 @@ const AnnouncementsView: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.title && formData.content) {
-      addAnnouncement(formData);
-      handleCloseFormModal();
+      setIsSaving(true);
+      try {
+        await addAnnouncement(formData);
+        handleCloseFormModal();
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -92,27 +101,20 @@ const AnnouncementsView: React.FC = () => {
               ))}
             </div>
           ) : (
-             <div className="text-center py-16 bg-gray-800 rounded-lg border border-gray-700">
-                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-gray-700">
-                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
-                        <path d="m3 11 18-5v12L3 14v-3z"></path>
-                        <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path>
-                    </svg>
-                </div>
-                <h3 className="mt-5 text-xl font-semibold text-gray-200">Nenhum aviso publicado</h3>
-                <p className="mt-2 text-gray-400">Quando um novo aviso for adicionado, ele aparecerá aqui.</p>
-                {isAdminOrMestre && (
-                    <div className="mt-6">
-                         <button
-                            onClick={handleOpenAddModal}
-                            className="flex items-center mx-auto space-x-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 shadow-sm"
-                            >
-                            <PlusCircleIcon />
-                            <span>Publicar o primeiro aviso</span>
-                        </button>
-                    </div>
+             <EmptyState
+                icon={<MegaphoneIcon />}
+                title="Nenhum aviso publicado"
+                message="Quando um novo aviso for adicionado, ele aparecerá aqui para todos os alunos."
+                actionButton={isAdminOrMestre && (
+                    <button
+                        onClick={handleOpenAddModal}
+                        className="flex items-center mx-auto space-x-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 shadow-sm"
+                    >
+                        <PlusCircleIcon />
+                        <span>Publicar o primeiro aviso</span>
+                    </button>
                 )}
-            </div>
+             />
           )}
         </div>
       </div>
@@ -175,8 +177,8 @@ const AnnouncementsView: React.FC = () => {
             <button type="button" onClick={handleCloseFormModal} className="px-4 py-2 rounded-md text-gray-200 bg-gray-600 hover:bg-gray-500 transition-colors">
               Cancelar
             </button>
-            <button type="submit" className="px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors">
-              Publicar Aviso
+            <button type="submit" disabled={isSaving} className="flex items-center justify-center w-36 px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors disabled:bg-red-800">
+              {isSaving ? <SpinnerIcon /> : 'Publicar Aviso'}
             </button>
           </div>
         </form>

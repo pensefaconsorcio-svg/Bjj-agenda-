@@ -1,11 +1,15 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { type ClassSession } from '../types';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { EditIcon } from './icons/EditIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import Modal from './Modal';
 import { CalendarPlusIcon } from './icons/CalendarPlusIcon';
+import { CalendarIcon } from './icons/CalendarIcon';
 import { ExportIcon } from './icons/ExportIcon';
+import { SpinnerIcon } from './icons/SpinnerIcon';
+import EmptyState from './EmptyState';
 import { useAppStore } from '../store';
 
 const daysOfWeek = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
@@ -75,6 +79,7 @@ const ScheduleView: React.FC = () => {
   const [editingClass, setEditingClass] = useState<ClassSession | null>(null);
   const [formData, setFormData] = useState(initialFormState);
   const [classToDelete, setClassToDelete] = useState<ClassSession | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const isAdminOrMestre = user.role === 'admin' || user.role === 'mestre';
 
@@ -93,6 +98,7 @@ const ScheduleView: React.FC = () => {
   const confirmBooking = useCallback(() => {
     if (selectedClass) {
       setBookedClasses(prev => new Set(prev).add(selectedClass.id));
+      toast.success(`Aula "${selectedClass.name}" agendada com sucesso!`);
       setSelectedClass(null);
     }
   }, [selectedClass]);
@@ -104,6 +110,7 @@ const ScheduleView: React.FC = () => {
             newSet.delete(classId);
             return newSet;
         });
+        toast.success("Agendamento cancelado.");
     }
   };
 
@@ -127,14 +134,19 @@ const ScheduleView: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingClass) {
-      updateClass({ ...formData, id: editingClass.id });
-    } else {
-      addClass(formData);
+    setIsSaving(true);
+    try {
+      if (editingClass) {
+        await updateClass({ ...formData, id: editingClass.id });
+      } else {
+        await addClass(formData);
+      }
+      handleCloseFormModal();
+    } finally {
+      setIsSaving(false);
     }
-    handleCloseFormModal();
   };
     
   const handleConfirmDelete = () => {
@@ -216,27 +228,26 @@ const ScheduleView: React.FC = () => {
     classes: classes.filter(c => c.day === day),
   })).filter(d => d.classes.length > 0);
 
-  return (
-    <>
-      <div className="animate-fade-in-up">
-        <div className="flex justify-end items-center mb-6 space-x-4">
-             <button 
-                onClick={handleExportToCalendar} 
-                className="flex items-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 shadow-sm"
-            >
-                <ExportIcon />
-                <span>Exportar Agenda</span>
-            </button>
-            {isAdminOrMestre && (
-                <button 
-                    onClick={handleOpenAddModal} 
-                    className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 shadow-sm"
-                >
-                    <PlusCircleIcon />
-                    <span>Adicionar Aula</span>
-                </button>
-            )}
-        </div>
+  const renderContent = () => {
+      if (classes.length === 0 && isAdminOrMestre) {
+          return (
+              <EmptyState 
+                  icon={<CalendarIcon />}
+                  title="Nenhuma aula na agenda"
+                  message="Sua agenda de aulas está vazia. Adicione a primeira aula para que seus alunos possam vê-la."
+                  actionButton={
+                    <button 
+                        onClick={handleOpenAddModal} 
+                        className="flex items-center mx-auto space-x-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 shadow-sm"
+                    >
+                        <PlusCircleIcon />
+                        <span>Adicionar a primeira aula</span>
+                    </button>
+                  }
+              />
+          );
+      }
+      return (
         <div className="space-y-10">
           {classesByDay.map(({ day, classes: dayClasses }) => (
             <div key={day}>
@@ -291,6 +302,31 @@ const ScheduleView: React.FC = () => {
             </div>
           ))}
         </div>
+      )
+  }
+
+  return (
+    <>
+      <div className="animate-fade-in-up">
+        <div className="flex justify-end items-center mb-6 space-x-4">
+             <button 
+                onClick={handleExportToCalendar} 
+                className="flex items-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 shadow-sm"
+            >
+                <ExportIcon />
+                <span>Exportar Agenda</span>
+            </button>
+            {isAdminOrMestre && (
+                <button 
+                    onClick={handleOpenAddModal} 
+                    className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 shadow-sm"
+                >
+                    <PlusCircleIcon />
+                    <span>Adicionar Aula</span>
+                </button>
+            )}
+        </div>
+        {renderContent()}
       </div>
 
       {/* Booking Modal for Users */}
@@ -378,8 +414,8 @@ const ScheduleView: React.FC = () => {
               <button type="button" onClick={handleCloseFormModal} className="px-4 py-2 rounded-md text-gray-200 bg-gray-600 hover:bg-gray-500 transition-colors">
                 Cancelar
               </button>
-              <button type="submit" className="px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors">
-                Salvar
+              <button type="submit" disabled={isSaving} className="flex items-center justify-center w-28 px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors disabled:bg-red-800">
+                {isSaving ? <SpinnerIcon /> : 'Salvar'}
               </button>
             </div>
         </form>

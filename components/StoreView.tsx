@@ -3,7 +3,10 @@ import { type Product } from '../types';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { EditIcon } from './icons/EditIcon';
 import { TrashIcon } from './icons/TrashIcon';
+import { StoreIcon } from './icons/StoreIcon';
 import Modal from './Modal';
+import EmptyState from './EmptyState';
+import { SpinnerIcon } from './icons/SpinnerIcon';
 import { ShoppingCartPlusIcon } from './icons/ShoppingCartPlusIcon';
 import { useAppStore } from '../store';
 
@@ -29,6 +32,7 @@ const StoreView: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState(initialFormState);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const isAdminOrMestre = user.role === 'admin' || user.role === 'mestre';
 
@@ -74,18 +78,23 @@ const StoreView: React.FC = () => {
     }
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.imageUrl) {
       alert("Por favor, adicione uma imagem para o produto.");
       return;
     }
-    if (editingProduct) {
-      updateProduct({ ...formData, id: editingProduct.id });
-    } else {
-      addProduct(formData);
+    setIsSaving(true);
+    try {
+        if (editingProduct) {
+          await updateProduct({ ...formData, id: editingProduct.id });
+        } else {
+          await addProduct(formData);
+        }
+        handleCloseFormModal();
+    } finally {
+        setIsSaving(false);
     }
-    handleCloseFormModal();
   };
 
   const handleConfirmDelete = () => {
@@ -109,40 +118,57 @@ const StoreView: React.FC = () => {
             </button>
           )}
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {products.map(product => (
-            <div key={product.id} className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden shadow-sm group flex flex-col transition-all duration-300 hover:shadow-lg hover:border-gray-600 hover:-translate-y-1">
-              <div className="relative">
-                <img src={product.imageUrl} alt={product.name} className="w-full h-64 object-cover" />
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300"></div>
-              </div>
-              <div className="p-4 flex flex-col flex-grow">
-                <h3 className="text-lg font-semibold text-gray-100 truncate">{product.name}</h3>
-                <p className="text-sm text-gray-400">{product.category}</p>
-                <div className="flex-grow"></div>
-                <div className="flex items-center justify-between mt-4">
-                  <span className="text-xl font-bold text-red-500">R$ {product.price.toFixed(2)}</span>
-                  {isAdminOrMestre ? (
-                    <div className="flex items-center space-x-2">
-                      <button onClick={() => handleOpenEditModal(product)} className="p-2 text-gray-400 hover:text-red-500 bg-gray-700 rounded-full transition-colors"><EditIcon /></button>
-                      <button onClick={() => setProductToDelete(product)} className="p-2 text-gray-400 hover:text-red-500 bg-gray-700 rounded-full transition-colors"><TrashIcon /></button>
-                    </div>
-                  ) : (
-                    <button 
-                      onClick={() => addToCart(product)} 
-                      className="flex items-center justify-center space-x-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 px-3 py-2 rounded-md transition-all shadow-sm"
-                      aria-label={`Adicionar ${product.name} ao carrinho`}
-                    >
-                      <ShoppingCartPlusIcon />
-                      <span>Adicionar</span>
-                    </button>
-                  )}
+        
+        {products.length === 0 && isAdminOrMestre ? (
+             <EmptyState 
+                icon={<StoreIcon />}
+                title="Sua loja está vazia"
+                message="Nenhum produto foi cadastrado ainda. Adicione o primeiro item para começar a vender para seus alunos."
+                actionButton={
+                <button 
+                    onClick={handleOpenAddModal} 
+                    className="flex items-center mx-auto space-x-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 shadow-sm"
+                >
+                    <PlusCircleIcon />
+                    <span>Adicionar primeiro produto</span>
+                </button>
+                }
+            />
+        ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {products.map(product => (
+                <div key={product.id} className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden shadow-sm group flex flex-col transition-all duration-300 hover:shadow-lg hover:border-gray-600 hover:-translate-y-1">
+                <div className="relative">
+                    <img src={product.imageUrl} alt={product.name} className="w-full h-64 object-cover" />
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300"></div>
                 </div>
-              </div>
+                <div className="p-4 flex flex-col flex-grow">
+                    <h3 className="text-lg font-semibold text-gray-100 truncate">{product.name}</h3>
+                    <p className="text-sm text-gray-400">{product.category}</p>
+                    <div className="flex-grow"></div>
+                    <div className="flex items-center justify-between mt-4">
+                    <span className="text-xl font-bold text-red-500">R$ {product.price.toFixed(2)}</span>
+                    {isAdminOrMestre ? (
+                        <div className="flex items-center space-x-2">
+                        <button onClick={() => handleOpenEditModal(product)} className="p-2 text-gray-400 hover:text-red-500 bg-gray-700 rounded-full transition-colors"><EditIcon /></button>
+                        <button onClick={() => setProductToDelete(product)} className="p-2 text-gray-400 hover:text-red-500 bg-gray-700 rounded-full transition-colors"><TrashIcon /></button>
+                        </div>
+                    ) : (
+                        <button 
+                        onClick={() => addToCart(product)} 
+                        className="flex items-center justify-center space-x-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 px-3 py-2 rounded-md transition-all shadow-sm"
+                        aria-label={`Adicionar ${product.name} ao carrinho`}
+                        >
+                        <ShoppingCartPlusIcon />
+                        <span>Adicionar</span>
+                        </button>
+                    )}
+                    </div>
+                </div>
+                </div>
+            ))}
             </div>
-          ))}
-        </div>
+        )}
       </div>
       
       {/* Delete Confirmation Modal for Admins */}
@@ -200,8 +226,8 @@ const StoreView: React.FC = () => {
               <button type="button" onClick={handleCloseFormModal} className="px-4 py-2 rounded-md text-gray-200 bg-gray-600 hover:bg-gray-500 transition-colors">
                 Cancelar
               </button>
-              <button type="submit" className="px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors">
-                Salvar
+              <button type="submit" disabled={isSaving} className="flex items-center justify-center w-28 px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors disabled:bg-red-800">
+                {isSaving ? <SpinnerIcon /> : 'Salvar'}
               </button>
             </div>
         </form>
