@@ -1,6 +1,6 @@
 import create from 'zustand';
 import toast from 'react-hot-toast';
-import { type View, type Product, type User, type ClassSession, type Booking, type Announcement, type PromotionPlan, type SiteSettings, type TatameArea, type CartItem, type FinancialTransaction, type TransactionCategory } from './types';
+import { type View, type Product, type User, type ClassSession, type Booking, type Announcement, type PromotionPlan, type SiteSettings, type TatameArea, type CartItem, type FinancialTransaction, type TransactionCategory, type Belt } from './types';
 import { db } from './db';
 
 interface AppState {
@@ -50,7 +50,7 @@ interface AppState {
   toggleSidebarCollapse: () => Promise<void>;
 
   // User Management
-  createUser: (newUserData: { email: string; pass: string; role: 'admin' | 'user' | 'mestre'; name: string; paymentDueDate: string | null }) => Promise<{ success: boolean; message?: string }>;
+  createUser: (newUserData: { email: string; pass: string; role: 'admin' | 'user' | 'mestre'; name: string; paymentDueDate: string | null; belt: Belt; }) => Promise<{ success: boolean; message?: string }>;
   updateUser: (updatedUserData: User & { pass?: string }) => Promise<void>;
   deleteUser: (userId: number) => Promise<boolean>;
 
@@ -203,6 +203,7 @@ export const useAppStore = create<AppState>()(
           email: newUserData.email,
           name: newUserData.name,
           role: newUserData.role,
+          belt: newUserData.belt,
           paymentDueDate: newUserData.role === 'user' ? newUserData.paymentDueDate : null,
         };
         const newCredential = { email: newUserData.email, pass: newUserData.pass };

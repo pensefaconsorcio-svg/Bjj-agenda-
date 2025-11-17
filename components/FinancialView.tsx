@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { type FinancialTransaction, type TransactionCategory } from '../types';
+import { type FinancialTransaction, type TransactionCategory, type Belt } from '../types';
 import Modal from './Modal';
 import { TrashIcon } from './icons/TrashIcon';
 import { ArrowUpCircleIcon } from './icons/ArrowUpCircleIcon';
@@ -16,6 +16,14 @@ const getPaymentStatus = (dueDate: string | null) => {
     if (dueDateObj < today) return { text: 'Vencido', color: 'bg-red-300 text-red-900' };
     if (dueDateObj.getTime() === today.getTime()) return { text: 'Vence hoje', color: 'bg-yellow-300 text-yellow-900' };
     return { text: 'Em dia', color: 'bg-green-300 text-green-900' };
+};
+
+const beltColorMap: Record<Belt, string> = {
+    branca: 'bg-white text-black',
+    azul: 'bg-blue-600 text-white',
+    roxa: 'bg-purple-600 text-white',
+    marrom: 'bg-yellow-800 text-white',
+    preta: 'bg-black text-white border border-gray-500',
 };
 
 const TransactionModal: React.FC<{
@@ -169,7 +177,8 @@ const FinancialView: React.FC = () => {
         deleteTransaction, 
         addCategory, 
         updateCategory, 
-        deleteCategory 
+        deleteCategory,
+        updateUser
     } = useAppStore(state => ({
         users: state.users,
         transactions: state.financialTransactions,
@@ -179,6 +188,7 @@ const FinancialView: React.FC = () => {
         addCategory: state.addCategory,
         updateCategory: state.updateCategory,
         deleteCategory: state.deleteCategory,
+        updateUser: state.updateUser,
     }));
     
     const [activeTab, setActiveTab] = useState<'overview' | 'students'>('overview');
@@ -262,23 +272,40 @@ const FinancialView: React.FC = () => {
         {activeTab === 'students' && (
             <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-sm overflow-hidden">
                 <h2 className="text-xl font-bold text-gray-100 p-6">Status de Pagamento dos Alunos</h2>
-                <table className="w-full text-left">
-                    <thead className="bg-gray-900/50"><tr>
-                        <th className="p-4 text-sm font-semibold text-gray-300">Aluno</th>
-                        <th className="p-4 text-sm font-semibold text-gray-300">Email</th>
-                        <th className="p-4 text-sm font-semibold text-gray-300">Vencimento</th>
-                        <th className="p-4 text-sm font-semibold text-gray-300">Status</th>
-                    </tr></thead>
-                    <tbody className="divide-y divide-gray-700">{users.filter(u => u.role === 'user').map(student => {
-                        const paymentStatus = getPaymentStatus(student.paymentDueDate);
-                        return (<tr key={student.id} className="hover:bg-gray-700/50">
-                            <td className="p-4 font-medium text-gray-100">{student.name}</td>
-                            <td className="p-4 text-gray-400">{student.email}</td>
-                            <td className="p-4 text-gray-300 font-mono text-sm">{student.paymentDueDate ? new Date(student.paymentDueDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</td>
-                            <td className="p-4"><span className={`px-2 py-1 text-xs font-bold rounded-full ${paymentStatus.color}`}>{paymentStatus.text}</span></td>
-                        </tr>);
-                    })}</tbody>
-                </table>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-gray-900/50"><tr>
+                            <th className="p-4 text-sm font-semibold text-gray-300">Aluno</th>
+                            <th className="p-4 text-sm font-semibold text-gray-300">Email</th>
+                            <th className="p-4 text-sm font-semibold text-gray-300">Faixa</th>
+                            <th className="p-4 text-sm font-semibold text-gray-300">Vencimento</th>
+                            <th className="p-4 text-sm font-semibold text-gray-300">Status</th>
+                        </tr></thead>
+                        <tbody className="divide-y divide-gray-700">{users.filter(u => u.role === 'user').map(student => {
+                            const paymentStatus = getPaymentStatus(student.paymentDueDate);
+                            return (<tr key={student.id} className="hover:bg-gray-700/50">
+                                <td className="p-4 font-medium text-gray-100">{student.name}</td>
+                                <td className="p-4 text-gray-400">{student.email}</td>
+                                <td className="p-4">
+                                    <select
+                                        value={student.belt}
+                                        onChange={(e) => updateUser({ ...student, belt: e.target.value as Belt })}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className={`px-3 py-1 text-sm font-semibold rounded-lg border-transparent focus:ring-2 focus:ring-red-500 focus:outline-none ${beltColorMap[student.belt]}`}
+                                    >
+                                        <option value="branca" className="bg-gray-700 text-white">Branca</option>
+                                        <option value="azul" className="bg-gray-700 text-white">Azul</option>
+                                        <option value="roxa" className="bg-gray-700 text-white">Roxa</option>
+                                        <option value="marrom" className="bg-gray-700 text-white">Marrom</option>
+                                        <option value="preta" className="bg-gray-700 text-white">Preta</option>
+                                    </select>
+                                </td>
+                                <td className="p-4 text-gray-300 font-mono text-sm">{student.paymentDueDate ? new Date(student.paymentDueDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</td>
+                                <td className="p-4"><span className={`px-2 py-1 text-xs font-bold rounded-full ${paymentStatus.color}`}>{paymentStatus.text}</span></td>
+                            </tr>);
+                        })}</tbody>
+                    </table>
+                </div>
                  {users.filter(u => u.role === 'user').length === 0 && <div className="text-center py-12 text-gray-400"><p>Nenhum aluno cadastrado.</p></div>}
             </div>
         )}

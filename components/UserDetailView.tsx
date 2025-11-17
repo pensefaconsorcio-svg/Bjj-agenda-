@@ -2,6 +2,7 @@ import React from 'react';
 import { useAppStore } from '../store';
 import { ArrowLeftIcon } from './icons/ArrowLeftIcon';
 import { FinancialIcon } from './icons/FinancialIcon';
+import { type Belt } from '../types';
 
 const getPaymentStatus = (dueDate: string | null) => {
     if (!dueDate) {
@@ -18,6 +19,14 @@ const getPaymentStatus = (dueDate: string | null) => {
     } else {
         return { text: 'Em dia', color: 'bg-green-300 text-green-900' };
     }
+};
+
+const beltColorMap: Record<Belt, string> = {
+    branca: 'bg-white text-black',
+    azul: 'bg-blue-600 text-white',
+    roxa: 'bg-purple-600 text-white',
+    marrom: 'bg-yellow-800 text-white',
+    preta: 'bg-black text-white border border-gray-500',
 };
 
 const UserDetailView: React.FC = () => {
@@ -61,6 +70,8 @@ const UserDetailView: React.FC = () => {
     mestre: { text: 'Mestre', color: 'bg-blue-300 text-blue-900' },
     admin: { text: 'Admin', color: 'bg-red-300 text-red-900' },
   };
+  const beltName = user.belt.charAt(0).toUpperCase() + user.belt.slice(1);
+
 
   return (
     <div className="animate-fade-in-up space-y-8">
@@ -83,11 +94,17 @@ const UserDetailView: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 text-center">
               <p className="text-sm font-medium text-gray-400">Função</p>
               <p className={`mt-2 inline-block px-3 py-1 text-sm font-bold rounded-full ${roleInfo[user.role].color}`}>
                   {roleInfo[user.role].text}
+              </p>
+          </div>
+          <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 text-center">
+              <p className="text-sm font-medium text-gray-400">Faixa</p>
+              <p className={`mt-2 inline-block px-3 py-1 text-sm font-bold rounded-full ${beltColorMap[user.belt]}`}>
+                  {beltName}
               </p>
           </div>
           <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 text-center">

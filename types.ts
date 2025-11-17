@@ -1,11 +1,14 @@
 
 
+export type Belt = 'branca' | 'azul' | 'roxa' | 'marrom' | 'preta';
+
 export interface User {
   id: number;
   email: string;
   name: string;
   role: 'admin' | 'user' | 'mestre';
   paymentDueDate: string | null; // YYYY-MM-DD format
+  belt: Belt;
 }
 
 export interface ClassSession {
@@ -73,6 +76,9 @@ export interface SiteSettings {
   paymentInstructions: string;
   logoUrl: string | null;
   loginImageUrl: string | null;
+  paymentGateway: 'manual' | 'mercadopago' | 'asaas';
+  mercadoPagoApiKey: string;
+  asaasApiKey: string;
 }
 
 export interface TransactionCategory {

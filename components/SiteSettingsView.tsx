@@ -14,7 +14,7 @@ const SiteSettingsView: React.FC = () => {
     setSettings(currentSettings);
   }, [currentSettings]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setSettings(prev => ({ ...prev, [name]: value }));
   };
@@ -113,31 +113,48 @@ const SiteSettingsView: React.FC = () => {
 
           {/* Payment Settings */}
           <div className="space-y-6">
-             <h3 className="text-lg font-medium text-gray-200 border-b border-gray-700 pb-2">Configurações de Pagamento</h3>
-              <div>
-                <label htmlFor="pixKey" className="block text-sm font-medium text-gray-300 mb-1">Chave PIX para Pagamentos</label>
-                <input 
-                  type="text" 
-                  id="pixKey" 
-                  name="pixKey" 
-                  value={settings.pixKey} 
-                  onChange={handleChange}
-                  placeholder="E-mail, CPF/CNPJ, Telefone ou Chave Aleatória"
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent" 
-                />
-              </div>
-              <div>
-                <label htmlFor="paymentInstructions" className="block text-sm font-medium text-gray-300 mb-1">Instruções de Pagamento</label>
-                <textarea 
-                  id="paymentInstructions" 
-                  name="paymentInstructions" 
-                  value={settings.paymentInstructions} 
-                  onChange={handleChange}
-                  rows={3}
-                  placeholder="Ex: Após o pagamento, envie o comprovante para o WhatsApp (XX) XXXXX-XXXX."
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                />
-              </div>
+            <h3 className="text-lg font-medium text-gray-200 border-b border-gray-700 pb-2">Configurações de Pagamento</h3>
+             <div>
+                <label htmlFor="paymentGateway" className="block text-sm font-medium text-gray-300 mb-1">Gateway de Pagamento</label>
+                 <select 
+                    id="paymentGateway" 
+                    name="paymentGateway" 
+                    value={settings.paymentGateway} 
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                >
+                    <option value="manual">PIX Manual</option>
+                    <option value="mercadopago">Mercado Pago</option>
+                    <option value="asaas">Asaas</option>
+                </select>
+            </div>
+            
+            {settings.paymentGateway === 'manual' && (
+                <>
+                    <div>
+                        <label htmlFor="pixKey" className="block text-sm font-medium text-gray-300 mb-1">Chave PIX para Pagamentos</label>
+                        <input type="text" id="pixKey" name="pixKey" value={settings.pixKey} onChange={handleChange} placeholder="E-mail, CPF/CNPJ, Telefone ou Chave Aleatória" className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg"/>
+                    </div>
+                    <div>
+                        <label htmlFor="paymentInstructions" className="block text-sm font-medium text-gray-300 mb-1">Instruções de Pagamento</label>
+                        <textarea id="paymentInstructions" name="paymentInstructions" value={settings.paymentInstructions} onChange={handleChange} rows={3} placeholder="Ex: Após o pagamento, envie o comprovante..." className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg"/>
+                    </div>
+                </>
+            )}
+
+            {settings.paymentGateway === 'mercadopago' && (
+                 <div>
+                    <label htmlFor="mercadoPagoApiKey" className="block text-sm font-medium text-gray-300 mb-1">Chave de API do Mercado Pago</label>
+                    <input type="password" id="mercadoPagoApiKey" name="mercadoPagoApiKey" value={settings.mercadoPagoApiKey} onChange={handleChange} placeholder="Insira sua Chave de API" className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg"/>
+                </div>
+            )}
+
+            {settings.paymentGateway === 'asaas' && (
+                 <div>
+                    <label htmlFor="asaasApiKey" className="block text-sm font-medium text-gray-300 mb-1">Chave de API do Asaas</label>
+                    <input type="password" id="asaasApiKey" name="asaasApiKey" value={settings.asaasApiKey} onChange={handleChange} placeholder="Insira sua Chave de API" className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg"/>
+                </div>
+            )}
           </div>
 
           {/* Customization */}

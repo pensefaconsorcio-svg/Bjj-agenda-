@@ -1,6 +1,6 @@
-// Fix: Use a named import for Dexie to resolve module resolution issues with some TypeScript configurations.
-import { Dexie, type Table } from 'dexie';
-import { type User, type ClassSession, type Announcement, type Product, type CartItem, type Booking, type TatameArea, type PromotionPlan, type SiteSettings, type TransactionCategory, type FinancialTransaction } from './types';
+// Fix: Switched to a default import for Dexie to resolve class extension issues.
+import Dexie, { type Table } from 'dexie';
+import { type User, type ClassSession, type Announcement, type Product, type CartItem, type Booking, type TatameArea, type PromotionPlan, type SiteSettings, type TransactionCategory, type FinancialTransaction, type Belt } from './types';
 
 // --- INITIAL DATA ---
 
@@ -61,6 +61,9 @@ const initialSiteSettings: SiteSettings = {
   facebookUrl: '#',
   xUrl: '#',
   whatsappUrl: '#',
+  paymentGateway: 'manual',
+  mercadoPagoApiKey: '',
+  asaasApiKey: '',
   pixKey: 'chave-pix-aleatoria-exemplo@banco.com',
   paymentInstructions: 'Após o pagamento, por favor envie o comprovante para o nosso WhatsApp: (XX) 9XXXX-XXXX para confirmarmos seu pedido.',
   logoUrl: null,
@@ -68,9 +71,9 @@ const initialSiteSettings: SiteSettings = {
 };
 
 const initialUsers: User[] = [
-    { id: 1, email: 'admin@bjj.com', name: 'Administrador', role: 'admin', paymentDueDate: null },
-    { id: 2, email: 'user@bjj.com', name: 'Aluno Exemplo', role: 'user', paymentDueDate: '2024-08-15' },
-    { id: 3, email: 'mestre@bjj.com', name: 'Mestre Academia', role: 'mestre', paymentDueDate: null },
+    { id: 1, email: 'admin@bjj.com', name: 'Administrador', role: 'admin', paymentDueDate: null, belt: 'branca' },
+    { id: 2, email: 'user@bjj.com', name: 'Aluno Exemplo', role: 'user', paymentDueDate: '2024-08-15', belt: 'azul' },
+    { id: 3, email: 'mestre@bjj.com', name: 'Mestre Academia', role: 'mestre', paymentDueDate: null, belt: 'preta' },
 ];
 
 const initialCredentials: { [email: string]: string } = {

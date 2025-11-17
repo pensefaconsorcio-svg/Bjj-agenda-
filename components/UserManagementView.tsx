@@ -9,6 +9,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
+import { type Belt } from '../types';
 
 // Base object schema without refinement
 const baseUserObject = z.object({
@@ -16,6 +17,7 @@ const baseUserObject = z.object({
   email: z.string().email('Formato de e-mail inválido.'),
   pass: z.string().optional(),
   role: z.enum(['admin', 'user', 'mestre']),
+  belt: z.enum(['branca', 'azul', 'roxa', 'marrom', 'preta']),
   paymentDueDate: z.string().nullable(),
 });
 
@@ -81,6 +83,7 @@ const UserManagementView: React.FC = () => {
         reset({
             ...editingUser,
             pass: '',
+            belt: editingUser.belt || 'branca',
             paymentDueDate: editingUser.paymentDueDate || new Date().toISOString().split('T')[0]
         });
     } else {
@@ -89,6 +92,7 @@ const UserManagementView: React.FC = () => {
             email: '',
             pass: '',
             role: currentUser.role === 'mestre' ? 'user' : 'user',
+            belt: 'branca',
             paymentDueDate: new Date().toISOString().split('T')[0],
         });
     }
@@ -296,6 +300,17 @@ const UserManagementView: React.FC = () => {
                     {watchRole === 'mestre' && <option value="mestre">Mestre</option>}
                   </>)}
             </select>
+          </div>
+          <div>
+            <label htmlFor="belt" className="block text-sm font-medium text-gray-300 mb-1">Faixa</label>
+            <select {...register('belt')} id="belt" className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg">
+                <option value="branca">Branca</option>
+                <option value="azul">Azul</option>
+                <option value="roxa">Roxa</option>
+                <option value="marrom">Marrom</option>
+                <option value="preta">Preta</option>
+            </select>
+            {errors.belt && <p className="text-red-500 text-xs mt-1">{errors.belt.message}</p>}
           </div>
            {watchRole === 'user' && (
               <div>

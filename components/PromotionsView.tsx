@@ -20,6 +20,14 @@ const SubscriptionPaymentModal: React.FC<SubscriptionPaymentModalProps> = ({ isO
   const [copied, setCopied] = useState(false);
   const { processPlanPayment } = useAppStore();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsProcessing(false);
+      setPaymentSuccess(false);
+    }
+  }, [isOpen]);
 
   if (!isOpen || !plan) return null;
 
@@ -36,59 +44,114 @@ const SubscriptionPaymentModal: React.FC<SubscriptionPaymentModalProps> = ({ isO
   const handleConfirmPayment = async () => {
     if (!plan) return;
     setIsProcessing(true);
+    
+    // Simulating gateway interaction
+    if (settings.paymentGateway !== 'manual') {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
     try {
       await processPlanPayment(plan.id);
-      onClose();
+      setPaymentSuccess(true);
+      setTimeout(() => {
+          onClose();
+      }, 2500);
     } finally {
-      setIsProcessing(false);
+      if (settings.paymentGateway === 'manual') {
+        setIsProcessing(false);
+      }
     }
+  };
+
+  const gatewayName = {
+      mercadopago: 'Mercado Pago',
+      asaas: 'Asaas'
+  }[settings.paymentGateway] || 'Gateway';
+
+
+  const renderContent = () => {
+    if (isProcessing) {
+        return (
+            <div className="text-center py-8 space-y-4">
+                <SpinnerIcon className="h-12 w-12 text-red-500 mx-auto" />
+                {paymentSuccess ? (
+                    <>
+                        <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto" />
+                        <h3 className="text-xl font-semibold text-gray-100">Pagamento Confirmado!</h3>
+                        <p className="text-gray-400">Seu plano foi ativado com sucesso.</p>
+                    </>
+                ) : (
+                    <>
+                        <h3 className="text-xl font-semibold text-gray-100">
+                            {settings.paymentGateway === 'manual' ? 'Processando...' : `Conectando com ${gatewayName}...`}
+                        </h3>
+                        <p className="text-gray-400">Por favor, aguarde.</p>
+                    </>
+                )}
+            </div>
+        );
+    }
+    
+    if (settings.paymentGateway === 'manual') {
+      return (
+        <div className="space-y-4">
+          <div>
+            <p className="text-gray-300 text-sm">Valor total do plano:</p>
+            <p className="text-3xl font-bold text-red-500">R$ {total.toFixed(2)}</p>
+          </div>
+          
+          <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
+            <p className="text-sm font-medium text-gray-300 mb-1">Chave PIX:</p>
+            <div className="flex items-center justify-between bg-gray-700 p-2 rounded-md">
+              <p className="font-mono text-gray-100 truncate pr-2" title={settings.pixKey}>{settings.pixKey || "Não configurada"}</p>
+              <button 
+                onClick={handleCopy}
+                disabled={!settings.pixKey || copied}
+                className="flex items-center space-x-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-md transition-all shadow-sm disabled:bg-gray-500 disabled:cursor-not-allowed"
+              >
+                {copied ? <CheckCircleIcon/> : <ClipboardCopyIcon/>}
+                <span>{copied ? 'Copiado!' : 'Copiar'}</span>
+              </button>
+            </div>
+          </div>
+
+          <div>
+             <p className="text-sm font-medium text-gray-300 mb-1">Instruções:</p>
+             <p className="text-gray-400 text-sm whitespace-pre-wrap">{settings.paymentInstructions || "Contate a academia para finalizar o pagamento."}</p>
+          </div>
+
+          <div className="mt-6 flex justify-end space-x-3">
+              <button onClick={onClose} className="px-6 py-2 rounded-md text-gray-200 bg-gray-600 hover:bg-gray-500">Fechar</button>
+              <button onClick={handleConfirmPayment} className="flex items-center justify-center w-48 px-6 py-2 rounded-md text-white bg-green-600 hover:bg-green-700">Confirmar Pagamento</button>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+        <div className="space-y-6 text-center">
+            <p className="text-gray-300">Você será redirecionado para o ambiente seguro do <strong className="text-white">{gatewayName}</strong> para finalizar sua compra.</p>
+            <div>
+                <p className="text-gray-300 text-sm">Plano:</p>
+                <p className="text-xl font-bold text-gray-100">{plan.name}</p>
+            </div>
+             <div>
+                <p className="text-gray-300 text-sm">Valor total:</p>
+                <p className="text-3xl font-bold text-red-500">R$ {total.toFixed(2)}</p>
+            </div>
+             <div className="mt-6 flex justify-end space-x-3 pt-4">
+              <button onClick={onClose} className="px-6 py-2 rounded-md text-gray-200 bg-gray-600 hover:bg-gray-500">Cancelar</button>
+              <button onClick={handleConfirmPayment} className="flex-grow px-6 py-2 rounded-md text-white font-semibold bg-green-600 hover:bg-green-700">
+                Pagar com {gatewayName}
+              </button>
+            </div>
+        </div>
+    );
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Pagar ${plan.name}`}>
-      <div className="space-y-4">
-        <div>
-          <p className="text-gray-300 text-sm">Valor total do plano:</p>
-          <p className="text-3xl font-bold text-red-500">R$ {total.toFixed(2)}</p>
-        </div>
-        
-        <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
-          <p className="text-sm font-medium text-gray-300 mb-1">Chave PIX:</p>
-          <div className="flex items-center justify-between bg-gray-700 p-2 rounded-md">
-            <p className="font-mono text-gray-100 truncate pr-2" title={settings.pixKey}>{settings.pixKey || "Não configurada"}</p>
-            <button 
-              onClick={handleCopy}
-              disabled={!settings.pixKey || copied}
-              className="flex items-center space-x-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-md transition-all shadow-sm disabled:bg-gray-500 disabled:cursor-not-allowed"
-            >
-              {copied ? <CheckCircleIcon/> : <ClipboardCopyIcon/>}
-              <span>{copied ? 'Copiado!' : 'Copiar'}</span>
-            </button>
-          </div>
-        </div>
-
-        <div>
-           <p className="text-sm font-medium text-gray-300 mb-1">Instruções:</p>
-           <p className="text-gray-400 text-sm whitespace-pre-wrap">{settings.paymentInstructions || "Contate a academia para finalizar o pagamento."}</p>
-        </div>
-
-        <div className="mt-6 flex justify-end space-x-3">
-            <button 
-              onClick={onClose} 
-              disabled={isProcessing}
-              className="px-6 py-2 rounded-md text-gray-200 bg-gray-600 hover:bg-gray-500 transition-colors disabled:opacity-50"
-            >
-                Fechar
-            </button>
-             <button 
-                onClick={handleConfirmPayment}
-                disabled={isProcessing}
-                className="flex items-center justify-center w-48 px-6 py-2 rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors disabled:bg-green-800"
-            >
-                {isProcessing ? <SpinnerIcon /> : 'Confirmar Pagamento'}
-            </button>
-        </div>
-      </div>
+        {renderContent()}
     </Modal>
   );
 };
