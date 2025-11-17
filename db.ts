@@ -1,4 +1,5 @@
-// Fix: Switched to a default import for Dexie to resolve class extension issues.
+
+// Fix: Import Dexie as a named export instead of a default export.
 import { Dexie, type Table } from 'dexie';
 import { type User, type ClassSession, type Announcement, type Product, type CartItem, type Booking, type TatameArea, type PromotionPlan, type SiteSettings, type TransactionCategory, type FinancialTransaction, type Belt } from './types';
 
@@ -109,7 +110,6 @@ interface AppState {
 }
 
 class BJJAgendaDB extends Dexie {
-  // Fix: Replaced `Dexie.Table` with the imported `Table` type to correctly type the table properties.
   users!: Table<User, number>;
   credentials!: Table<Credential, string>;
   classes!: Table<ClassSession, number>;
