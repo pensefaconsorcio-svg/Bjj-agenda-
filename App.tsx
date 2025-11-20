@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React, { useEffect, useMemo } from 'react';
 import Sidebar from './components/Header';
 import ScheduleView from './components/ScheduleView';
 import AnnouncementsView from './components/AnnouncementsView';
@@ -34,14 +35,26 @@ const viewTitles: Record<View, string> = {
   userDetail: 'Detalhes do Usuário'
 };
 
+const VIEW_COMPONENTS: Record<View, React.ReactElement> = {
+  dashboard: <DashboardView />,
+  schedule: <ScheduleView />,
+  announcements: <AnnouncementsView />,
+  store: <StoreView />,
+  booking: <BookingView />,
+  promotions: <PromotionsView />,
+  settings: <SiteSettingsView />,
+  userManagement: <UserManagementView />,
+  userDetail: <UserDetailView />,
+  financial: <FinancialView />,
+};
+
 const PageHeader: React.FC = () => {
-  const { currentView, cart, currentUser, openMobileMenu, openCart } = useAppStore(state => ({
-    currentView: state.currentView,
-    cart: state.cart,
-    currentUser: state.currentUser,
-    openMobileMenu: state.openMobileMenu,
-    openCart: state.openCart,
-  }));
+  const currentView = useAppStore(state => state.currentView);
+  const cart = useAppStore(state => state.cart);
+  const currentUser = useAppStore(state => state.currentUser);
+  const openMobileMenu = useAppStore(state => state.openMobileMenu);
+  const openCart = useAppStore(state => state.openCart);
+
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const title = viewTitles[currentView] || 'Dashboard';
 
@@ -83,33 +96,20 @@ const PageHeader: React.FC = () => {
 
 
 const App: React.FC = () => {
-  const { currentUser, currentView, isSidebarCollapsed, isInitialized, initializeApp } = useAppStore(state => ({
-    currentUser: state.currentUser,
-    currentView: state.currentView,
-    isSidebarCollapsed: state.isSidebarCollapsed,
-    isInitialized: state.isInitialized,
-    initializeApp: state.initializeApp,
-  }));
+  const currentUser = useAppStore(state => state.currentUser);
+  const currentView = useAppStore(state => state.currentView);
+  const isSidebarCollapsed = useAppStore(state => state.isSidebarCollapsed);
+  const isInitialized = useAppStore(state => state.isInitialized);
+  const initializeApp = useAppStore(state => state.initializeApp);
 
   useEffect(() => {
     initializeApp();
   }, [initializeApp]);
 
-  const renderView = () => {
-    switch (currentView) {
-      case 'dashboard': return <DashboardView />;
-      case 'schedule': return <ScheduleView />;
-      case 'announcements': return <AnnouncementsView />;
-      case 'store': return <StoreView />;
-      case 'booking': return <BookingView />;
-      case 'promotions': return <PromotionsView />;
-      case 'settings': return <SiteSettingsView />;
-      case 'userManagement': return <UserManagementView />;
-      case 'userDetail': return <UserDetailView />;
-      case 'financial': return <FinancialView />;
-      default: return <DashboardView />;
-    }
-  };
+  const memoizedView = useMemo(() => {
+    return VIEW_COMPONENTS[currentView] || <DashboardView />;
+  }, [currentView]);
+
 
   if (!isInitialized) {
     return (
@@ -154,7 +154,7 @@ const App: React.FC = () => {
           <div className={`flex-1 flex flex-col max-w-full overflow-x-hidden transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
             <PageHeader />
             <main className="flex-grow p-4 sm:p-6 lg:p-8">
-              {renderView()}
+              {memoizedView}
             </main>
             <Footer />
           </div>

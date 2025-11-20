@@ -1,6 +1,6 @@
 
-// Fix: Import Dexie as a named export instead of a default export.
-import { Dexie, type Table } from 'dexie';
+// Fix: Import Dexie as a default export.
+import Dexie, { type Table } from 'dexie';
 import { type User, type ClassSession, type Announcement, type Product, type CartItem, type Booking, type TatameArea, type PromotionPlan, type SiteSettings, type TransactionCategory, type FinancialTransaction, type Belt } from './types';
 
 // --- INITIAL DATA ---
