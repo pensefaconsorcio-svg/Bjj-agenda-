@@ -129,29 +129,35 @@ export const useAppStore = create<AppState>()(
       
       initializeApp: async () => {
         if (get().isInitialized) return;
-        await db.init();
-        const [
-            users, credentials, classes, products, announcements, bookings,
-            promotions, siteSettings, tatameAreas, cart, isSidebarCollapsed,
-            financialTransactions, financialCategories
-        ] = await Promise.all([
-            db.users.getAll(), db.credentials.getAll(), db.classes.getAll(),
-            db.products.getAll(), db.announcements.getAll(), db.bookings.getAll(),
-            db.promotions.getAll(), db.siteSettings.get(), db.tatameAreas.getAll(),
-            db.cart.getAll(), db.sidebar.isCollapsed(), db.financialTransactions.getAll(),
-            db.financialCategories.getAll()
-        ]);
-        
-        const credentialsMap = credentials.reduce((acc, cred) => {
-            acc[cred.email] = cred.pass;
-            return acc;
-        }, {} as { [email: string]: string });
+        try {
+          await db.init();
+          const [
+              users, credentials, classes, products, announcements, bookings,
+              promotions, siteSettings, tatameAreas, cart, isSidebarCollapsed,
+              financialTransactions, financialCategories
+          ] = await Promise.all([
+              db.users.getAll(), db.credentials.getAll(), db.classes.getAll(),
+              db.products.getAll(), db.announcements.getAll(), db.bookings.getAll(),
+              db.promotions.getAll(), db.siteSettings.get(), db.tatameAreas.getAll(),
+              db.cart.getAll(), db.sidebar.isCollapsed(), db.financialTransactions.getAll(),
+              db.financialCategories.getAll()
+          ]);
+          
+          const credentialsMap = credentials.reduce((acc, cred) => {
+              acc[cred.email] = cred.pass;
+              return acc;
+          }, {} as { [email: string]: string });
 
-        set({
-            users, credentials: credentialsMap, classes, products, announcements,
-            bookings, promotions, siteSettings, tatameAreas, cart, isSidebarCollapsed,
-            financialTransactions, financialCategories, isInitialized: true
-        });
+          set({
+              users, credentials: credentialsMap, classes, products, announcements,
+              bookings, promotions, siteSettings, tatameAreas, cart, isSidebarCollapsed,
+              financialTransactions, financialCategories, isInitialized: true
+          });
+        } catch (error) {
+            console.error("Failed to initialize app:", error);
+            toast.error("Não foi possível carregar os dados da academia.");
+            set({ isInitialized: true }); // Mark as initialized to prevent loading loop
+        }
       },
 
       setCurrentView: (view) => set({ currentView: view, isMobileMenuOpen: false }),
@@ -175,9 +181,15 @@ export const useAppStore = create<AppState>()(
         const { users, credentials } = get();
         const userExists = users.some(u => u.email === email);
         if (userExists && credentials[email]) {
-          await db.credentials.update({ email, pass: newPass });
-          set({ credentials: { ...credentials, [email]: newPass } });
-          return true;
+          try {
+            await db.credentials.update({ email, pass: newPass });
+            set({ credentials: { ...credentials, [email]: newPass } });
+            return true;
+          } catch (error) {
+            console.error("Failed to reset password:", error);
+            toast.error("Erro ao redefinir a senha.");
+            return false;
+          }
         }
         return false;
       },
@@ -189,47 +201,62 @@ export const useAppStore = create<AppState>()(
       openMobileMenu: () => set({ isMobileMenuOpen: true }),
       closeMobileMenu: () => set({ isMobileMenuOpen: false }),
       toggleSidebarCollapse: async () => {
-        const newCollapsedState = !get().isSidebarCollapsed;
-        await db.sidebar.saveCollapsed(newCollapsedState);
-        set({ isSidebarCollapsed: newCollapsedState });
+        try {
+          const newCollapsedState = !get().isSidebarCollapsed;
+          await db.sidebar.saveCollapsed(newCollapsedState);
+          set({ isSidebarCollapsed: newCollapsedState });
+        } catch (error) {
+          console.error("Failed to toggle sidebar:", error);
+          toast.error("Erro ao salvar preferência do menu.");
+        }
       },
 
       createUser: async (newUserData) => {
         if (get().users.some(u => u.email === newUserData.email)) {
           return { success: false, message: 'Este e-mail já está cadastrado.' };
         }
-        const newUser: User = {
-          id: Date.now(),
-          email: newUserData.email,
-          name: newUserData.name,
-          role: newUserData.role,
-          belt: newUserData.belt,
-          paymentDueDate: newUserData.role === 'user' ? newUserData.paymentDueDate : null,
-        };
-        const newCredential = { email: newUserData.email, pass: newUserData.pass };
-        await db.users.add(newUser);
-        await db.credentials.add(newCredential);
-        set(state => ({
-          users: [...state.users, newUser],
-          credentials: { ...state.credentials, [newUserData.email]: newUserData.pass }
-        }));
-        return { success: true };
+        try {
+          const newUser: User = {
+            id: Date.now(),
+            email: newUserData.email,
+            name: newUserData.name,
+            role: newUserData.role,
+            belt: newUserData.belt,
+            paymentDueDate: newUserData.role === 'user' ? newUserData.paymentDueDate : null,
+          };
+          const newCredential = { email: newUserData.email, pass: newUserData.pass };
+          await db.users.add(newUser);
+          await db.credentials.add(newCredential);
+          set(state => ({
+            users: [...state.users, newUser],
+            credentials: { ...state.credentials, [newUserData.email]: newUserData.pass }
+          }));
+          return { success: true };
+        } catch (error) {
+            console.error("Failed to create user:", error);
+            toast.error("Erro ao criar usuário.");
+            return { success: false, message: 'Erro no banco de dados.' };
+        }
       },
       
       updateUser: async (updatedUserData) => {
-        const { pass, ...userToUpdate } = updatedUserData;
-        await db.users.update(userToUpdate);
-        set(state => ({
-          users: state.users.map(u => u.id === userToUpdate.id ? userToUpdate : u),
-          // Also update currentUser if it's the one being changed
-          currentUser: state.currentUser?.id === userToUpdate.id ? userToUpdate : state.currentUser
-        }));
-        
-        if (pass && pass.length > 0) {
-          await db.credentials.update({ email: userToUpdate.email, pass });
+        try {
+          const { pass, ...userToUpdate } = updatedUserData;
+          await db.users.update(userToUpdate);
           set(state => ({
-            credentials: { ...state.credentials, [userToUpdate.email]: pass }
+            users: state.users.map(u => u.id === userToUpdate.id ? userToUpdate : u),
+            currentUser: state.currentUser?.id === userToUpdate.id ? userToUpdate : state.currentUser
           }));
+          
+          if (pass && pass.length > 0) {
+            await db.credentials.update({ email: userToUpdate.email, pass });
+            set(state => ({
+              credentials: { ...state.credentials, [userToUpdate.email]: pass }
+            }));
+          }
+        } catch (error) {
+            console.error("Failed to update user:", error);
+            toast.error("Erro ao atualizar usuário.");
         }
       },
       
@@ -240,107 +267,173 @@ export const useAppStore = create<AppState>()(
         }
         const userToDelete = get().users.find(u => u.id === userId);
         if (userToDelete) {
-          await db.users.delete(userId);
-          await db.credentials.delete(userToDelete.email);
-          set(state => {
-            const newCreds = { ...state.credentials };
-            delete newCreds[userToDelete.email];
-            return {
-              users: state.users.filter(u => u.id !== userId),
-              credentials: newCreds
-            };
-          });
-          return true;
+          try {
+            await db.users.delete(userId);
+            await db.credentials.delete(userToDelete.email);
+            set(state => {
+              const newCreds = { ...state.credentials };
+              delete newCreds[userToDelete.email];
+              return {
+                users: state.users.filter(u => u.id !== userId),
+                credentials: newCreds
+              };
+            });
+            return true;
+          } catch (error) {
+            console.error("Failed to delete user:", error);
+            toast.error("Erro ao excluir usuário.");
+            return false;
+          }
         }
         return false;
       },
 
       addClass: async (newClass) => {
-        const classToAdd = { ...newClass, id: Date.now() };
-        await db.classes.add(classToAdd);
-        set(state => ({ classes: [...state.classes, classToAdd] }));
-        toast.success('Aula adicionada com sucesso!');
+        try {
+          const classToAdd = { ...newClass, id: Date.now() };
+          await db.classes.add(classToAdd);
+          set(state => ({ classes: [...state.classes, classToAdd] }));
+          toast.success('Aula adicionada com sucesso!');
+        } catch (error) {
+          console.error("Failed to add class:", error);
+          toast.error("Erro ao adicionar aula.");
+        }
       },
       updateClass: async (updatedClass) => {
-        await db.classes.update(updatedClass);
-        set(state => ({ classes: state.classes.map(c => c.id === updatedClass.id ? updatedClass : c) }));
-        toast.success('Aula atualizada com sucesso!');
+        try {
+          await db.classes.update(updatedClass);
+          set(state => ({ classes: state.classes.map(c => c.id === updatedClass.id ? updatedClass : c) }));
+          toast.success('Aula atualizada com sucesso!');
+        } catch (error) {
+          console.error("Failed to update class:", error);
+          toast.error("Erro ao atualizar aula.");
+        }
       },
       deleteClass: async (classId) => {
-        await db.classes.delete(classId);
-        set(state => ({ classes: state.classes.filter(c => c.id !== classId) }));
-        toast.success('Aula excluída com sucesso!');
+        try {
+          await db.classes.delete(classId);
+          set(state => ({ classes: state.classes.filter(c => c.id !== classId) }));
+          toast.success('Aula excluída com sucesso!');
+        } catch (error) {
+          console.error("Failed to delete class:", error);
+          toast.error("Erro ao excluir aula.");
+        }
       },
 
       addProduct: async (newProduct) => {
-          const productToAdd = { ...newProduct, id: Date.now() };
-          await db.products.add(productToAdd);
-          set(state => ({ products: [...state.products, productToAdd] }));
-          toast.success('Produto adicionado com sucesso!');
+          try {
+            const productToAdd = { ...newProduct, id: Date.now() };
+            await db.products.add(productToAdd);
+            set(state => ({ products: [...state.products, productToAdd] }));
+            toast.success('Produto adicionado com sucesso!');
+          } catch (error) {
+            console.error("Failed to add product:", error);
+            toast.error("Erro ao adicionar produto.");
+          }
       },
       updateProduct: async (updatedProduct) => {
-          await db.products.update(updatedProduct);
-          set(state => ({ products: state.products.map(p => p.id === updatedProduct.id ? updatedProduct : p) }));
-          toast.success('Produto atualizado com sucesso!');
+          try {
+            await db.products.update(updatedProduct);
+            set(state => ({ products: state.products.map(p => p.id === updatedProduct.id ? updatedProduct : p) }));
+            toast.success('Produto atualizado com sucesso!');
+          } catch (error) {
+            console.error("Failed to update product:", error);
+            toast.error("Erro ao atualizar produto.");
+          }
       },
       deleteProduct: async (productId) => {
-          await db.products.delete(productId);
-          set(state => ({ products: state.products.filter(p => p.id !== productId) }));
-          toast.success('Produto excluído com sucesso!');
+          try {
+            await db.products.delete(productId);
+            set(state => ({ products: state.products.filter(p => p.id !== productId) }));
+            toast.success('Produto excluído com sucesso!');
+          } catch (error) {
+            console.error("Failed to delete product:", error);
+            toast.error("Erro ao excluir produto.");
+          }
       },
 
       addToCart: async (product) => {
-        const { cart } = get();
-        const existingItem = cart.find(item => item.id === product.id);
-        let newCart: CartItem[];
-        if (existingItem) {
-          newCart = cart.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
-        } else {
-          newCart = [...cart, { ...product, quantity: 1 }];
-        }
-        await db.cart.saveAll(newCart);
-        set({ cart: newCart });
-        toast.success(`${product.name} adicionado ao carrinho!`);
-      },
-      updateCartQuantity: async (productId, newQuantity) => {
-        let newCart: CartItem[];
-        if (newQuantity <= 0) {
-          newCart = get().cart.filter(item => item.id !== productId);
-        } else {
-          newCart = get().cart.map(item => item.id === productId ? { ...item, quantity: newQuantity } : item);
-        }
-        await db.cart.saveAll(newCart);
-        set({ cart: newCart });
-      },
-      removeFromCart: async (productId) => {
-          const newCart = get().cart.filter(item => item.id !== productId);
+        try {
+          const { cart } = get();
+          const existingItem = cart.find(item => item.id === product.id);
+          let newCart: CartItem[];
+          if (existingItem) {
+            newCart = cart.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+          } else {
+            newCart = [...cart, { ...product, quantity: 1 }];
+          }
           await db.cart.saveAll(newCart);
           set({ cart: newCart });
+          toast.success(`${product.name} adicionado ao carrinho!`);
+        } catch (error) {
+          console.error("Failed to add to cart:", error);
+          toast.error("Erro ao adicionar ao carrinho.");
+        }
+      },
+      updateCartQuantity: async (productId, newQuantity) => {
+        try {
+          let newCart: CartItem[];
+          if (newQuantity <= 0) {
+            newCart = get().cart.filter(item => item.id !== productId);
+          } else {
+            newCart = get().cart.map(item => item.id === productId ? { ...item, quantity: newQuantity } : item);
+          }
+          await db.cart.saveAll(newCart);
+          set({ cart: newCart });
+        } catch (error) {
+          console.error("Failed to update cart quantity:", error);
+          toast.error("Erro ao atualizar o carrinho.");
+        }
+      },
+      removeFromCart: async (productId) => {
+          try {
+            const newCart = get().cart.filter(item => item.id !== productId);
+            await db.cart.saveAll(newCart);
+            set({ cart: newCart });
+          } catch (error) {
+            console.error("Failed to remove from cart:", error);
+            toast.error("Erro ao remover do carrinho.");
+          }
       },
       clearCart: async () => {
-          await db.cart.saveAll([]);
-          set({ cart: [] });
+          try {
+            await db.cart.saveAll([]);
+            set({ cart: [] });
+          } catch (error) {
+            console.error("Failed to clear cart:", error);
+            toast.error("Erro ao limpar o carrinho.");
+          }
       },
 
       addAnnouncement: async (newAnnouncementData) => {
-        const date = new Date();
-        const day = date.getDate();
-        const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-        const month = monthNames[date.getMonth()];
-        const year = date.getFullYear();
-        const newAnnouncement: Announcement = {
-          id: Date.now(),
-          ...newAnnouncementData,
-          date: `${day} de ${month}, ${year}`
-        };
-        await db.announcements.add(newAnnouncement);
-        set(state => ({ announcements: [newAnnouncement, ...state.announcements].sort((a,b) => b.id - a.id) }));
-        toast.success('Aviso publicado com sucesso!');
+        try {
+          const date = new Date();
+          const day = date.getDate();
+          const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+          const month = monthNames[date.getMonth()];
+          const year = date.getFullYear();
+          const newAnnouncement: Announcement = {
+            id: Date.now(),
+            ...newAnnouncementData,
+            date: `${day} de ${month}, ${year}`
+          };
+          await db.announcements.add(newAnnouncement);
+          set(state => ({ announcements: [newAnnouncement, ...state.announcements].sort((a,b) => b.id - a.id) }));
+          toast.success('Aviso publicado com sucesso!');
+        } catch (error) {
+          console.error("Failed to add announcement:", error);
+          toast.error("Erro ao publicar aviso.");
+        }
       },
       deleteAnnouncement: async (announcementId) => {
-          await db.announcements.delete(announcementId);
-          set(state => ({ announcements: state.announcements.filter(a => a.id !== announcementId) }));
-          toast.success('Aviso excluído com sucesso!');
+          try {
+            await db.announcements.delete(announcementId);
+            set(state => ({ announcements: state.announcements.filter(a => a.id !== announcementId) }));
+            toast.success('Aviso excluído com sucesso!');
+          } catch (error) {
+            console.error("Failed to delete announcement:", error);
+            toast.error("Erro ao excluir aviso.");
+          }
       },
 
       bookTatame: async (bookingDetails) => {
@@ -359,103 +452,173 @@ export const useAppStore = create<AppState>()(
             toast.error('Este horário já foi solicitado ou reservado.');
             return false;
         }
-        await db.bookings.add(newBooking);
-        set(state => ({ bookings: [...state.bookings, newBooking] }));
-        toast.success('Sua solicitação de reserva foi enviada para aprovação.');
-        return true;
+        try {
+          await db.bookings.add(newBooking);
+          set(state => ({ bookings: [...state.bookings, newBooking] }));
+          toast.success('Sua solicitação de reserva foi enviada para aprovação.');
+          return true;
+        } catch (error) {
+          console.error("Failed to book tatame:", error);
+          toast.error("Erro ao solicitar reserva.");
+          return false;
+        }
       },
       cancelBooking: async (bookingId) => {
-        await db.bookings.delete(bookingId);
-        set(state => ({ bookings: state.bookings.filter(b => b.id !== bookingId) }));
-        toast.success('Reserva cancelada.');
-      },
-      updateBookingStatus: async (bookingId, action) => {
-        if (action === 'deny') {
+        try {
           await db.bookings.delete(bookingId);
           set(state => ({ bookings: state.bookings.filter(b => b.id !== bookingId) }));
-          toast.error('Solicitação de reserva negada.');
-        } else {
-          const bookingToUpdate = get().bookings.find(b => b.id === bookingId);
-          if(bookingToUpdate) {
-              const updatedBooking = { ...bookingToUpdate, status: 'confirmed' as 'confirmed' };
-              await db.bookings.update(updatedBooking);
-              set(state => ({ bookings: state.bookings.map(b => (b.id === bookingId ? updatedBooking : b)) }));
-              toast.success('Reserva confirmada com sucesso!');
+          toast.success('Reserva cancelada.');
+        } catch (error) {
+          console.error("Failed to cancel booking:", error);
+          toast.error("Erro ao cancelar reserva.");
+        }
+      },
+      updateBookingStatus: async (bookingId, action) => {
+        try {
+          if (action === 'deny') {
+            await db.bookings.delete(bookingId);
+            set(state => ({ bookings: state.bookings.filter(b => b.id !== bookingId) }));
+            toast.error('Solicitação de reserva negada.');
+          } else {
+            const bookingToUpdate = get().bookings.find(b => b.id === bookingId);
+            if(bookingToUpdate) {
+                const updatedBooking = { ...bookingToUpdate, status: 'confirmed' as 'confirmed' };
+                await db.bookings.update(updatedBooking);
+                set(state => ({ bookings: state.bookings.map(b => (b.id === bookingId ? updatedBooking : b)) }));
+                toast.success('Reserva confirmada com sucesso!');
+            }
           }
+        } catch (error) {
+          console.error("Failed to update booking status:", error);
+          toast.error("Erro ao atualizar reserva.");
         }
       },
       updateTatameAreas: async (updatedAreas) => {
-        await db.tatameAreas.saveAll(updatedAreas);
-        set({ tatameAreas: updatedAreas });
-        toast.success('Áreas de tatame salvas!');
+        try {
+          await db.tatameAreas.saveAll(updatedAreas);
+          set({ tatameAreas: updatedAreas });
+          toast.success('Áreas de tatame salvas!');
+        } catch (error) {
+          console.error("Failed to update tatame areas:", error);
+          toast.error("Erro ao salvar áreas de tatame.");
+        }
       },
       addTatameArea: async (areaData) => {
-        const newArea: TatameArea = {
-          ...areaData,
-          id: `${areaData.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-        };
-        const currentAreas = get().tatameAreas;
-        await db.tatameAreas.saveAll([...currentAreas, newArea]);
-        set(state => ({ tatameAreas: [...state.tatameAreas, newArea] }));
-        toast.success('Área de tatame adicionada!');
+        try {
+          const newArea: TatameArea = {
+            ...areaData,
+            id: `${areaData.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+          };
+          const currentAreas = get().tatameAreas;
+          await db.tatameAreas.saveAll([...currentAreas, newArea]);
+          set(state => ({ tatameAreas: [...state.tatameAreas, newArea] }));
+          toast.success('Área de tatame adicionada!');
+        } catch (error) {
+          console.error("Failed to add tatame area:", error);
+          toast.error("Erro ao adicionar área de tatame.");
+        }
       },
 
       addPromotion: async (newPlan) => {
-        const planToAdd = { ...newPlan, id: Date.now() };
-        await db.promotions.add(planToAdd);
-        set(state => ({ promotions: [...state.promotions, planToAdd] }));
-        toast.success('Plano adicionado com sucesso!');
+        try {
+          const planToAdd = { ...newPlan, id: Date.now() };
+          await db.promotions.add(planToAdd);
+          set(state => ({ promotions: [...state.promotions, planToAdd] }));
+          toast.success('Plano adicionado com sucesso!');
+        } catch (error) {
+          console.error("Failed to add promotion:", error);
+          toast.error("Erro ao adicionar plano.");
+        }
       },
       updatePromotion: async (updatedPlan) => {
-          await db.promotions.update(updatedPlan);
-          set(state => ({ promotions: state.promotions.map(p => p.id === updatedPlan.id ? updatedPlan : p) }));
-          toast.success('Plano atualizado com sucesso!');
+          try {
+            await db.promotions.update(updatedPlan);
+            set(state => ({ promotions: state.promotions.map(p => p.id === updatedPlan.id ? updatedPlan : p) }));
+            toast.success('Plano atualizado com sucesso!');
+          } catch (error) {
+            console.error("Failed to update promotion:", error);
+            toast.error("Erro ao atualizar plano.");
+          }
       },
       deletePromotion: async (planId) => {
-          await db.promotions.delete(planId);
-          set(state => ({ promotions: state.promotions.filter(p => p.id !== planId) }));
-          toast.success('Plano excluído com sucesso!');
+          try {
+            await db.promotions.delete(planId);
+            set(state => ({ promotions: state.promotions.filter(p => p.id !== planId) }));
+            toast.success('Plano excluído com sucesso!');
+          } catch (error) {
+            console.error("Failed to delete promotion:", error);
+            toast.error("Erro ao excluir plano.");
+          }
       },
 
       updateSiteSettings: async (newSettings) => {
-        await db.siteSettings.save(newSettings);
-        set({ siteSettings: newSettings });
-        toast.success('Configurações salvas com sucesso!');
+        try {
+          await db.siteSettings.save(newSettings);
+          set({ siteSettings: newSettings });
+          toast.success('Configurações salvas com sucesso!');
+        } catch (error) {
+          console.error("Failed to update site settings:", error);
+          toast.error("Erro ao salvar configurações.");
+        }
       },
 
       addTransaction: async (newTransaction) => {
-          const transactionToAdd = { ...newTransaction, id: Date.now() };
-          await db.financialTransactions.add(transactionToAdd);
-          set(state => ({ financialTransactions: [...state.financialTransactions, transactionToAdd] }));
-          toast.success('Transação adicionada com sucesso!');
+          try {
+            const transactionToAdd = { ...newTransaction, id: Date.now() };
+            await db.financialTransactions.add(transactionToAdd);
+            set(state => ({ financialTransactions: [...state.financialTransactions, transactionToAdd] }));
+            toast.success('Transação adicionada com sucesso!');
+          } catch (error) {
+            console.error("Failed to add transaction:", error);
+            toast.error("Erro ao adicionar transação.");
+          }
       },
       deleteTransaction: async (transactionId) => {
-          await db.financialTransactions.delete(transactionId);
-          set(state => ({ financialTransactions: state.financialTransactions.filter(t => t.id !== transactionId) }));
-          toast.success('Transação removida com sucesso!');
+          try {
+            await db.financialTransactions.delete(transactionId);
+            set(state => ({ financialTransactions: state.financialTransactions.filter(t => t.id !== transactionId) }));
+            toast.success('Transação removida com sucesso!');
+          } catch (error) {
+            console.error("Failed to delete transaction:", error);
+            toast.error("Erro ao remover transação.");
+          }
       },
       addCategory: async (newCategory) => {
-          const categoryToAdd = { ...newCategory, id: Date.now() };
-          await db.financialCategories.add(categoryToAdd);
-          set(state => ({ financialCategories: [...state.financialCategories, categoryToAdd] }));
-          toast.success('Categoria adicionada com sucesso!');
+          try {
+            const categoryToAdd = { ...newCategory, id: Date.now() };
+            await db.financialCategories.add(categoryToAdd);
+            set(state => ({ financialCategories: [...state.financialCategories, categoryToAdd] }));
+            toast.success('Categoria adicionada com sucesso!');
+          } catch (error) {
+            console.error("Failed to add category:", error);
+            toast.error("Erro ao adicionar categoria.");
+          }
       },
       updateCategory: async (updatedCategory) => {
-          // Dexie's `add` method throws if the key exists. `put` is used for add/update.
-          // Using the `update` wrapper method which calls `put`.
-          await db.financialCategories.update(updatedCategory);
-          set(state => ({ financialCategories: state.financialCategories.map(c => c.id === updatedCategory.id ? updatedCategory : c) }));
-          toast.success('Categoria atualizada!');
+          try {
+            await db.financialCategories.update(updatedCategory);
+            set(state => ({ financialCategories: state.financialCategories.map(c => c.id === updatedCategory.id ? updatedCategory : c) }));
+            toast.success('Categoria atualizada!');
+          } catch (error) {
+            console.error("Failed to update category:", error);
+            toast.error("Erro ao atualizar categoria.");
+          }
       },
       deleteCategory: async (categoryId) => {
         if (get().financialTransactions.some(t => t.categoryId === categoryId)) {
             toast.error('Não é possível excluir uma categoria em uso.');
             return false;
         }
-        await db.financialCategories.delete(categoryId);
-        set(state => ({ financialCategories: state.financialCategories.filter(c => c.id !== categoryId) }));
-        toast.success('Categoria removida com sucesso!');
-        return true;
+        try {
+          await db.financialCategories.delete(categoryId);
+          set(state => ({ financialCategories: state.financialCategories.filter(c => c.id !== categoryId) }));
+          toast.success('Categoria removida com sucesso!');
+          return true;
+        } catch (error) {
+          console.error("Failed to delete category:", error);
+          toast.error("Erro ao remover categoria.");
+          return false;
+        }
       },
       
       processPlanPayment: async (planId) => {
@@ -468,46 +631,55 @@ export const useAppStore = create<AppState>()(
             return;
         }
 
-        const total = plan.total ?? plan.price;
-        await addTransaction({
-            description: `Pagamento Plano ${plan.name} - ${currentUser.name}`,
-            amount: total,
-            date: new Date().toISOString().split('T')[0],
-            type: 'income',
-            categoryId: 1, // Assumes 'Mensalidades' is always ID 1
-        });
+        try {
+          const total = plan.total ?? plan.price;
+          await addTransaction({
+              description: `Pagamento Plano ${plan.name} - ${currentUser.name}`,
+              amount: total,
+              date: new Date().toISOString().split('T')[0],
+              type: 'income',
+              categoryId: 1, // Assumes 'Mensalidades' is always ID 1
+          });
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const currentDueDate = currentUser.paymentDueDate ? new Date(currentUser.paymentDueDate + 'T00:00:00') : today;
-        const baseDate = currentDueDate > today ? currentDueDate : today;
-        const newDueDate = new Date(baseDate);
-        newDueDate.setMonth(newDueDate.getMonth() + 1);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const currentDueDate = currentUser.paymentDueDate ? new Date(currentUser.paymentDueDate + 'T00:00:00') : today;
+          const baseDate = currentDueDate > today ? currentDueDate : today;
+          const newDueDate = new Date(baseDate);
+          newDueDate.setMonth(newDueDate.getMonth() + 1);
 
-        const updatedUser = {
-            ...currentUser,
-            paymentDueDate: newDueDate.toISOString().split('T')[0],
-        };
-        await updateUser(updatedUser);
-        
-        // Don't show success toast here, it's handled in the payment modal.
+          const updatedUser = {
+              ...currentUser,
+              paymentDueDate: newDueDate.toISOString().split('T')[0],
+          };
+          await updateUser(updatedUser);
+        } catch (error) {
+            console.error("Failed to process plan payment:", error);
+            toast.error("Erro ao processar o pagamento do plano.");
+            throw error; // Re-throw to be caught in the UI
+        }
       },
 
       processCartCheckout: async () => {
         const { cart, currentUser, addTransaction, clearCart } = get();
         if (!currentUser || cart.length === 0) return;
 
-        const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        await addTransaction({
-            description: `Compra na Loja - ${currentUser.name}`,
-            amount: total,
-            date: new Date().toISOString().split('T')[0],
-            type: 'income',
-            categoryId: 2, // Assumes 'Venda de Produtos' is always ID 2
-        });
+        try {
+          const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+          await addTransaction({
+              description: `Compra na Loja - ${currentUser.name}`,
+              amount: total,
+              date: new Date().toISOString().split('T')[0],
+              type: 'income',
+              categoryId: 2, // Assumes 'Venda de Produtos' is always ID 2
+          });
 
-        await clearCart();
-        // Don't show success toast here, it's handled in the checkout modal.
+          await clearCart();
+        } catch (error) {
+          console.error("Failed to process cart checkout:", error);
+          toast.error("Erro ao processar a compra.");
+          throw error; // Re-throw to be caught in the UI
+        }
       },
     })
 );
