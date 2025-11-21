@@ -67,6 +67,7 @@ export interface PromotionPlan {
 }
 
 export interface SiteSettings {
+  id: number;
   academyName: string;
   instagramUrl: string;
   facebookUrl: string;

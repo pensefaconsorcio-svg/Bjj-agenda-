@@ -1,5 +1,5 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { GoogleGenAI, FunctionDeclaration, Type } from '@google/genai';
 import { MicrophoneIcon } from './icons/MicrophoneIcon';
 import { useAppStore } from '../store';
 
@@ -45,12 +45,7 @@ declare global {
 }
 
 const AIAssistant: React.FC = () => {
-    const { transactions, categories, addTransaction, deleteTransaction } = useAppStore(state => ({
-        transactions: state.financialTransactions,
-        categories: state.financialCategories,
-        addTransaction: state.addTransaction,
-        deleteTransaction: state.deleteTransaction,
-    }));
+    const processAiCommand = useAppStore(state => state.processAiCommand);
 
     const [isListening, setIsListening] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -84,7 +79,7 @@ const AIAssistant: React.FC = () => {
             recognitionRef.current.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
                 setStatusMessage(`Processando: "${transcript}"`);
-                processCommand(transcript);
+                handleCommand(transcript);
             };
         } else {
              setStatusMessage('Reconhecimento de voz não suportado neste navegador.');
@@ -95,130 +90,13 @@ const AIAssistant: React.FC = () => {
         };
     }, []);
     
-    const findClosestCategory = (name: string, type: 'income' | 'expense'): number => {
-        const lowerCaseName = name.toLowerCase();
-        const matchingCategories = categories.filter(c => c.type === type);
-        
-        // Exact match first
-        let category = matchingCategories.find(c => c.name.toLowerCase() === lowerCaseName);
-        if (category) return category.id;
-
-        // Partial match
-        category = matchingCategories.find(c => lowerCaseName.includes(c.name.toLowerCase()));
-        if (category) return category.id;
-        
-        // Default to the first available category of that type
-        return matchingCategories[0]?.id || 0;
-    };
-
-    const findTransactionToDelete = (description: string, amount?: number): number | null => {
-        if (description.toLowerCase().includes('última')) {
-            const sorted = [...transactions].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-            return sorted[0]?.id || null;
-        }
-
-        const lowerCaseDesc = description.toLowerCase();
-        const candidates = transactions.filter(t => t.description.toLowerCase().includes(lowerCaseDesc));
-        
-        if (candidates.length === 0) return null;
-        if (candidates.length === 1) return candidates[0].id;
-
-        if (amount) {
-            const specificCandidate = candidates.find(c => c.amount === amount);
-            if (specificCandidate) return specificCandidate.id;
-        }
-
-        return candidates[0].id; // Return the most likely candidate if multiple match
-    };
-
-    const processCommand = async (command: string) => {
+    const handleCommand = async (command: string) => {
         setIsLoading(true);
-        try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            
-            const addTransactionDeclaration: FunctionDeclaration = {
-                name: 'addTransaction',
-                parameters: {
-                    type: Type.OBJECT,
-                    description: 'Adiciona uma nova transação financeira (entrada ou saída).',
-                    properties: {
-                        type: { type: Type.STRING, description: 'O tipo da transação, "income" para entrada/receita ou "expense" para saída/despesa.', enum: ['income', 'expense'] },
-                        amount: { type: Type.NUMBER, description: 'O valor da transação.' },
-                        description: { type: Type.STRING, description: 'Uma breve descrição da transação.' },
-                        categoryName: { type: Type.STRING, description: 'O nome da categoria da transação (ex: Mensalidades, Aluguel).' },
-                    },
-                    required: ['type', 'amount', 'description', 'categoryName'],
-                },
-            };
-
-            const removeTransactionDeclaration: FunctionDeclaration = {
-                 name: 'removeTransaction',
-                parameters: {
-                    type: Type.OBJECT,
-                    description: 'Remove uma transação financeira existente.',
-                    properties: {
-                        amount: { type: Type.NUMBER, description: 'O valor da transação a ser removida.' },
-                        description: { type: Type.STRING, description: 'A descrição da transação a ser removida. Pode ser "última" para remover a mais recente.' },
-                    },
-                    required: ['description'],
-                },
-            };
-            
-            const categoryList = categories.map(c => c.name).join(', ');
-            const systemInstruction = `Você é um assistente financeiro de uma academia de Jiu-Jitsu. Sua tarefa é interpretar comandos de voz para adicionar ou remover transações.
-            - Use a função 'addTransaction' para criar novas transações. "Entrada", "receita" ou "ganho" significam 'income'. "Saída", "despesa" ou "gasto" significam 'expense'.
-            - Use a função 'removeTransaction' para apagar transações. "Remover", "apagar" ou "excluir" são palavras-chave. Se o usuário disser "última", use "última" na descrição.
-            - As categorias disponíveis são: ${categoryList}. Tente associar o comando a uma delas.`;
-
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: command,
-                config: {
-                    tools: [{ functionDeclarations: [addTransactionDeclaration, removeTransactionDeclaration] }],
-                    systemInstruction
-                }
-            });
-
-            if (response.functionCalls && response.functionCalls.length > 0) {
-                const fc = response.functionCalls[0];
-                if (fc.name === 'addTransaction') {
-                    // Fix: Explicitly cast arguments from function call to ensure type safety.
-                    const { type, amount, description, categoryName } = fc.args as { type: 'income' | 'expense', amount: number, description: string, categoryName: string };
-                    const categoryId = findClosestCategory(categoryName, type);
-                    if (categoryId === 0) {
-                        throw new Error(`Nenhuma categoria do tipo '${type}' encontrada.`);
-                    }
-                    addTransaction({
-                        type,
-                        amount,
-                        description,
-                        categoryId,
-                        date: new Date().toISOString().split('T')[0],
-                    });
-                    setStatusMessage(`✅ Entrada de R$ ${amount.toFixed(2)} adicionada!`);
-                } else if (fc.name === 'removeTransaction') {
-                    // Fix: Explicitly cast arguments from function call to ensure type safety.
-                    const { description, amount } = fc.args as { description: string, amount?: number };
-                    const transactionId = findTransactionToDelete(description, amount);
-                    if (transactionId) {
-                        deleteTransaction(transactionId);
-                        setStatusMessage('🗑️ Transação removida com sucesso!');
-                    } else {
-                        setStatusMessage('⚠️ Transação não encontrada.');
-                    }
-                }
-            } else {
-                setStatusMessage('Não entendi o comando. Tente novamente.');
-            }
-
-        } catch (error) {
-            console.error('AI processing error:', error);
-            setStatusMessage('Houve um erro ao processar o comando.');
-        } finally {
-            setIsLoading(false);
-            if (!isListening) {
-                setTimeout(() => setStatusMessage('Clique no microfone para começar'), 3000);
-            }
+        const result = await processAiCommand(command);
+        setStatusMessage(result.message);
+        setIsLoading(false);
+        if (!isListening) {
+            setTimeout(() => setStatusMessage('Clique no microfone para começar'), 3000);
         }
     };
     
