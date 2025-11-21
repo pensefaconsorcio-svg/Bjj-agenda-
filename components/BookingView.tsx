@@ -96,7 +96,7 @@ const BookingView: React.FC = () => {
     }));
     
     const [selectedDate, setSelectedDate] = useState(formatDateForInput(new Date()));
-    const [confirmingBooking, setConfirmingBooking] = useState<Omit<Booking, 'id' | 'userId' | 'userEmail' | 'status'> | null>(null);
+    const [confirmingBooking, setConfirmingBooking] = useState<Omit<Booking, 'id' | 'userId' | 'userEmail' | 'status' | 'bookingKey'> | null>(null);
     const [editingArea, setEditingArea] = useState<TatameArea | null>(null);
     const [isAddAreaModalOpen, setIsAddAreaModalOpen] = useState(false);
     
@@ -117,7 +117,7 @@ const BookingView: React.FC = () => {
     
     const handleCancelClick = (booking: Booking) => {
         if (window.confirm(`Tem certeza que deseja cancelar a reserva para "${booking.tatameName}" no horário ${booking.timeSlot}?`)) {
-            cancelBooking(booking.id);
+            cancelBooking(booking.id!);
         }
     };
     
@@ -229,8 +229,8 @@ const BookingView: React.FC = () => {
                                                     isAdminOrMestre ? (
                                                         <>
                                                             <div className="text-right"><span className="text-sm text-yellow-500 font-semibold truncate" title={booking.userEmail}>{booking.userEmail}</span></div>
-                                                            <button onClick={() => updateBookingStatus(booking.id, 'deny')} className="p-1.5 text-red-500 hover:bg-red-900/50 rounded-full"><XCircleIcon /></button>
-                                                            <button onClick={() => updateBookingStatus(booking.id, 'confirm')} className="p-1.5 text-green-500 hover:bg-green-900/50 rounded-full"><CheckCircleIcon /></button>
+                                                            <button onClick={() => updateBookingStatus(booking.id!, 'deny')} className="p-1.5 text-red-500 hover:bg-red-900/50 rounded-full"><XCircleIcon /></button>
+                                                            <button onClick={() => updateBookingStatus(booking.id!, 'confirm')} className="p-1.5 text-green-500 hover:bg-green-900/50 rounded-full"><CheckCircleIcon /></button>
                                                         </>
                                                     ) : (
                                                         <>

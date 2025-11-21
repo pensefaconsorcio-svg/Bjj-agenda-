@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import { type Announcement } from '../types';
 import Modal from './Modal';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
@@ -49,15 +50,18 @@ const AnnouncementsView: React.FC = () => {
       try {
         await addAnnouncement(formData);
         handleCloseFormModal();
+      } catch (error) {
+          // FIX: 'toast' was not defined. Added import from 'react-hot-toast'.
+          toast.error("Ocorreu um erro ao publicar o aviso.");
       } finally {
         setIsSaving(false);
       }
     }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (announcementToDelete) {
-      deleteAnnouncement(announcementToDelete.id);
+      await deleteAnnouncement(announcementToDelete.id!);
       setAnnouncementToDelete(null);
     }
   };

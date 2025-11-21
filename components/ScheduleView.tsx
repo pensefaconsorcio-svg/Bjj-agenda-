@@ -97,7 +97,7 @@ const ScheduleView: React.FC = () => {
 
   const confirmBooking = useCallback(() => {
     if (selectedClass) {
-      setBookedClasses(prev => new Set(prev).add(selectedClass.id));
+      setBookedClasses(prev => new Set(prev).add(selectedClass.id!));
       toast.success(`Aula "${selectedClass.name}" agendada com sucesso!`);
       setSelectedClass(null);
     }
@@ -144,14 +144,16 @@ const ScheduleView: React.FC = () => {
         await addClass(formData);
       }
       handleCloseFormModal();
+    } catch (error) {
+        toast.error("Ocorreu um erro ao salvar a aula.");
     } finally {
       setIsSaving(false);
     }
   };
     
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (classToDelete) {
-      deleteClass(classToDelete.id);
+      await deleteClass(classToDelete.id!);
       setClassToDelete(null);
     }
   };
@@ -276,9 +278,9 @@ const ScheduleView: React.FC = () => {
                         </div>
                     ) : (
                         <div className="mt-6 flex items-center space-x-3">
-                           {bookedClasses.has(classSession.id) ? (
+                           {bookedClasses.has(classSession.id!) ? (
                               <button
-                                onClick={() => handleCancelBooking(classSession.id)}
+                                onClick={() => handleCancelBooking(classSession.id!)}
                                 className="flex-grow py-2 px-4 rounded-md font-semibold transition-all duration-300 bg-gray-600 hover:bg-gray-500 text-white"
                               >
                                 Cancelar

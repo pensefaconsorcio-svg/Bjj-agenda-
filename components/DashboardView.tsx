@@ -58,7 +58,6 @@ const StatCard: React.FC<{ title: string; value: string | number; icon: React.Re
     </div>
 );
 
-// Fix: Destructured the 'user' prop to make it available inside the component.
 const UserDashboard: React.FC<{ user: User }> = ({ user }) => {
   const { classes, announcements, bookings, setCurrentView } = useAppStore(state => ({
     classes: state.classes,
@@ -207,8 +206,8 @@ const AdminDashboard: React.FC = () => {
                                     <p className="text-sm text-gray-400">{b.userEmail} - {new Date(b.date + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
                                 </div>
                                 <div className="flex items-center space-x-3">
-                                    <button onClick={() => updateBookingStatus(b.id, 'deny')} className="p-2 text-red-500 hover:bg-red-900/50 rounded-full transition-colors"><XCircleIcon /></button>
-                                    <button onClick={() => updateBookingStatus(b.id, 'confirm')} className="p-2 text-green-500 hover:bg-green-900/50 rounded-full transition-colors"><CheckCircleIcon /></button>
+                                    <button onClick={() => updateBookingStatus(b.id!, 'deny')} className="p-2 text-red-500 hover:bg-red-900/50 rounded-full transition-colors"><XCircleIcon /></button>
+                                    <button onClick={() => updateBookingStatus(b.id!, 'confirm')} className="p-2 text-green-500 hover:bg-green-900/50 rounded-full transition-colors"><CheckCircleIcon /></button>
                                 </div>
                             </div>
                         ))}

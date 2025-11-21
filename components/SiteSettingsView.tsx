@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { type SiteSettings } from '../types';
 import { SpinnerIcon } from './icons/SpinnerIcon';
 import { useAppStore } from '../store';
@@ -38,6 +39,8 @@ const SiteSettingsView: React.FC = () => {
     setIsSaving(true);
     try {
         await updateSiteSettings(settings);
+    } catch (error) {
+        toast.error("Ocorreu um erro ao salvar as configurações.");
     } finally {
         setIsSaving(false);
     }

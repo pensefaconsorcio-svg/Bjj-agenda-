@@ -9,33 +9,20 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import { type Belt } from '../types';
+import { type Belt, type User } from '../types';
 
-// Base object schema without refinement
-const baseUserObject = z.object({
+// Schema for user data validation
+const userSchema = z.object({
   name: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
   email: z.string().email('Formato de e-mail inválido.'),
-  pass: z.string().optional(),
+  password: z.string().optional(),
   role: z.enum(['admin', 'user', 'mestre']),
   belt: z.enum(['branca', 'azul', 'roxa', 'marrom', 'preta']),
   paymentDueDate: z.string().nullable(),
-});
-
-// Refinement logic and options
-const refinement = (data: z.infer<typeof baseUserObject>) => data.role !== 'user' || !!data.paymentDueDate;
-const refinementOptions = {
+}).refine(data => data.role !== 'user' || !!data.paymentDueDate, {
   message: 'Data de vencimento é obrigatória para usuários.',
   path: ['paymentDueDate'],
-};
-
-// Schema for updating users
-const userSchema = baseUserObject.refine(refinement, refinementOptions);
-
-// Schema for creating users (extends the base to make password required, then applies the same refinement)
-const createUserSchema = baseUserObject.extend({
-  pass: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres.'),
-}).refine(refinement, refinementOptions);
-
+});
 
 type FormData = z.infer<typeof userSchema>;
 
@@ -69,34 +56,36 @@ const UserManagementView: React.FC = () => {
   }));
   
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<typeof users[0] | null>(null);
-  const [userToDelete, setUserToDelete] = useState<typeof users[0] | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
-  const { register, handleSubmit, formState: { errors, isSubmitting }, reset, watch } = useForm<FormData>({
-    resolver: zodResolver(editingUser ? userSchema : createUserSchema),
+  const { register, handleSubmit, formState: { errors, isSubmitting }, reset, watch, clearErrors } = useForm<FormData>({
+    resolver: zodResolver(userSchema),
   });
 
   const watchRole = watch('role');
 
   useEffect(() => {
-    if (editingUser) {
-        reset({
-            ...editingUser,
-            pass: '',
-            belt: editingUser.belt || 'branca',
-            paymentDueDate: editingUser.paymentDueDate || new Date().toISOString().split('T')[0]
-        });
-    } else {
-        reset({
-            name: '',
-            email: '',
-            pass: '',
-            role: currentUser.role === 'mestre' ? 'user' : 'user',
-            belt: 'branca',
-            paymentDueDate: new Date().toISOString().split('T')[0],
-        });
+    if (isModalOpen) {
+      clearErrors();
+      if (editingUser) {
+          reset({
+              ...editingUser,
+              belt: editingUser.belt || 'branca',
+              paymentDueDate: editingUser.paymentDueDate || new Date().toISOString().split('T')[0]
+          });
+      } else {
+          reset({
+              name: '',
+              email: '',
+              password: '',
+              role: currentUser.role === 'mestre' ? 'user' : 'user',
+              belt: 'branca',
+              paymentDueDate: new Date().toISOString().split('T')[0],
+          });
+      }
     }
-  }, [editingUser, isModalOpen, reset, currentUser.role]);
+  }, [editingUser, isModalOpen, reset, currentUser.role, clearErrors]);
 
 
   const handleOpenAddModal = () => {
@@ -104,7 +93,7 @@ const UserManagementView: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleOpenEditModal = (e: React.MouseEvent, user: typeof users[0]) => {
+  const handleOpenEditModal = (e: React.MouseEvent, user: User) => {
     e.stopPropagation();
     setEditingUser(user);
     setIsModalOpen(true);
@@ -115,49 +104,44 @@ const UserManagementView: React.FC = () => {
     setEditingUser(null);
   };
   
-  const handleRowClick = (user: typeof users[0]) => {
+  const handleRowClick = (user: User) => {
     setSelectedUserId(user.id);
     setCurrentView('userDetail');
   };
 
   const processFormSubmit = async (data: FormData) => {
     try {
-        if (editingUser) {
-            if (data.pass && data.pass.length > 0 && data.pass.length < 6) {
-                toast.error('A nova senha deve ter pelo menos 6 caracteres.');
-                return;
-            }
-            await updateUser({ ...editingUser, ...data });
-            toast.success('Usuário atualizado com sucesso!');
-        } else {
-           const result = await createUser({
-             ...(data as Required<FormData>), // pass is required by schema here
-             paymentDueDate: data.role === 'user' ? data.paymentDueDate : null
-           });
-           if (result.success) {
-               toast.success('Usuário criado com sucesso!');
-           } else {
-               toast.error(result.message || 'Erro ao criar usuário.');
-               return; // Prevent modal from closing on error
-           }
-        }
-        handleCloseModal();
-    } catch (error) {
-        toast.error('Ocorreu um erro.');
+      if (editingUser) {
+          await updateUser({ ...editingUser, ...data });
+          toast.success('Usuário atualizado com sucesso!');
+      } else {
+         if (!data.password || data.password.length < 6) {
+            toast.error("A senha é obrigatória e deve ter no mínimo 6 caracteres.");
+            return;
+         }
+         const { password, ...userData } = data;
+         const result = await createUser(userData, password);
+         if (result.success) {
+             toast.success('Usuário criado com sucesso!');
+         } else {
+             toast.error(result.message || 'Erro ao criar usuário.');
+             return;
+         }
+      }
+      handleCloseModal();
+    } catch (error: any) {
+        toast.error(error.message || 'Ocorreu um erro.');
     }
   };
 
   const handleConfirmDelete = async () => {
     if (userToDelete) {
-      const success = await deleteUser(userToDelete.id);
-      if (success) {
-        toast.success(`Usuário ${userToDelete.name} excluído.`);
-      }
+      await deleteUser(userToDelete.id);
       setUserToDelete(null);
     }
   };
   
-  const handleDeleteClick = (e: React.MouseEvent, user: typeof users[0]) => {
+  const handleDeleteClick = (e: React.MouseEvent, user: User) => {
       e.stopPropagation();
       setUserToDelete(user);
   };
@@ -251,14 +235,7 @@ const UserManagementView: React.FC = () => {
         {userToDelete && (
           <div>
             <p className="text-gray-300 mb-4">
-              Tem certeza que deseja excluir permanentemente o usuário abaixo?
-            </p>
-            <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
-              <p className="font-semibold text-gray-100">{userToDelete.name}</p>
-              <p className="text-sm text-gray-400">{userToDelete.email}</p>
-            </div>
-            <p className="text-sm text-yellow-500 mt-4">
-              <strong>Atenção:</strong> Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir permanentemente o usuário {userToDelete.name}? Esta ação não pode ser desfeita.
             </p>
             <div className="mt-6 flex justify-end space-x-4">
               <button onClick={() => setUserToDelete(null)} className="px-4 py-2 rounded-md text-gray-200 bg-gray-700 hover:bg-gray-600">Cancelar</button>
@@ -281,11 +258,15 @@ const UserManagementView: React.FC = () => {
             <input {...register('email')} type="email" id="email" disabled={!!editingUser} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg disabled:bg-gray-800 disabled:cursor-not-allowed" />
             {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
           </div>
-          <div>
-            <label htmlFor="pass" className="block text-sm font-medium text-gray-300 mb-1">{editingUser ? 'Nova Senha (opcional)' : 'Senha'}</label>
-            <input {...register('pass')} type="password" id="pass" placeholder={editingUser ? 'Deixe em branco para não alterar' : ''} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg" />
-            {errors.pass && <p className="text-red-500 text-xs mt-1">{errors.pass.message}</p>}
-          </div>
+          
+          {!editingUser && (
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">Senha Provisória</label>
+              <input {...register('password')} type="password" id="password" className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg" />
+              {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
+            </div>
+          )}
+        
           <div>
             <label htmlFor="role" className="block text-sm font-medium text-gray-300 mb-1">Função</label>
             <select {...register('role')} id="role" disabled={currentUser.role === 'mestre'} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg disabled:bg-gray-800 disabled:cursor-not-allowed">

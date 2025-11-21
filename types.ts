@@ -1,5 +1,3 @@
-
-
 export type Belt = 'branca' | 'azul' | 'roxa' | 'marrom' | 'preta';
 
 export interface User {
@@ -7,12 +5,15 @@ export interface User {
   email: string;
   name: string;
   role: 'admin' | 'user' | 'mestre';
-  paymentDueDate: string | null; // YYYY-MM-DD format
+  paymentDueDate: string | null;
   belt: Belt;
+  securityQuestion?: string;
+  securityAnswer?: string;
+  created_at?: string;
 }
 
 export interface ClassSession {
-  id: number;
+  id?: number;
   day: string;
   time: string;
   name: string;
@@ -21,14 +22,14 @@ export interface ClassSession {
 }
 
 export interface Announcement {
-  id: number;
+  id?: number;
   title: string;
   date: string;
   content: string;
 }
 
 export interface Product {
-  id: number;
+  id?: number;
   name: string;
   price: number;
   imageUrl: string;
@@ -40,10 +41,11 @@ export interface CartItem extends Product {
 }
 
 export interface Booking {
-  id: string; // Composite key: `${tatameId}-${date}-${timeSlot}`
+  id?: number;
+  bookingKey: string; // Composite key: `${tatameId}-${date}-${timeSlot}`
   tatameId: string;
   tatameName: string; // For display purposes
-  userId: number;
+  userId: number; // Foreign key to User ID
   userEmail: string;
   date: string; // YYYY-MM-DD
   timeSlot: string;
@@ -57,7 +59,7 @@ export interface TatameArea {
 }
 
 export interface PromotionPlan {
-  id: number;
+  id?: number;
   name: string;
   price: number;
   duration: string;
@@ -83,14 +85,14 @@ export interface SiteSettings {
 }
 
 export interface TransactionCategory {
-  id: number;
+  id?: number;
   name: string;
   type: 'income' | 'expense';
   emoji: string;
 }
 
 export interface FinancialTransaction {
-  id: number;
+  id?: number;
   description: string;
   amount: number;
   date: string; // YYYY-MM-DD

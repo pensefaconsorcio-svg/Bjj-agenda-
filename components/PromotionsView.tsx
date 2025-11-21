@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { type PromotionPlan, type SiteSettings } from '../types';
 import Modal from './Modal';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
@@ -46,20 +47,20 @@ const SubscriptionPaymentModal: React.FC<SubscriptionPaymentModalProps> = ({ isO
     setIsProcessing(true);
     
     // Simulating gateway interaction
-    if (settings.paymentGateway !== 'manual') {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-    }
+    await new Promise(resolve => setTimeout(resolve, settings.paymentGateway === 'manual' ? 500 : 2000));
 
     try {
-      await processPlanPayment(plan.id);
-      setPaymentSuccess(true);
-      setTimeout(() => {
-          onClose();
-      }, 2500);
+        await processPlanPayment(plan.id!);
+        setPaymentSuccess(true);
+        setTimeout(() => {
+            onClose();
+        }, 2500);
+    } catch (error) {
+        toast.error("Erro ao processar pagamento.");
     } finally {
-      if (settings.paymentGateway === 'manual') {
-        setIsProcessing(false);
-      }
+        if (settings.paymentGateway === 'manual') {
+            setIsProcessing(false);
+        }
     }
   };
 
@@ -240,14 +241,16 @@ const PromotionsView: React.FC = () => {
             await addPromotion(finalPlanData);
         }
         handleCloseFormModal();
+    } catch (error) {
+        toast.error("Ocorreu um erro ao salvar o plano.");
     } finally {
         setIsSaving(false);
     }
   };
 
-  const handleDelete = (planId: number) => {
+  const handleDelete = async (planId: number) => {
     if (window.confirm('Tem certeza que deseja excluir este plano?')) {
-      deletePromotion(planId);
+      await deletePromotion(planId);
     }
   };
   
@@ -288,7 +291,7 @@ const PromotionsView: React.FC = () => {
               {isAdminOrMestre && (
                   <div className="absolute top-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => handleOpenEditModal(plan)} className="p-2 text-gray-400 hover:text-red-500 bg-gray-700 rounded-full"><EditIcon /></button>
-                      <button onClick={() => handleDelete(plan.id)} className="p-2 text-gray-400 hover:text-red-500 bg-gray-700 rounded-full"><TrashIcon /></button>
+                      <button onClick={() => handleDelete(plan.id!)} className="p-2 text-gray-400 hover:text-red-500 bg-gray-700 rounded-full"><TrashIcon /></button>
                   </div>
               )}
               {plan.isBestValue && (

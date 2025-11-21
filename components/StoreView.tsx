@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { type Product } from '../types';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { EditIcon } from './icons/EditIcon';
@@ -81,7 +82,7 @@ const StoreView: React.FC = () => {
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.imageUrl) {
-      alert("Por favor, adicione uma imagem para o produto.");
+      toast.error("Por favor, adicione uma imagem para o produto.");
       return;
     }
     setIsSaving(true);
@@ -92,14 +93,16 @@ const StoreView: React.FC = () => {
           await addProduct(formData);
         }
         handleCloseFormModal();
+    } catch (error) {
+        toast.error("Ocorreu um erro ao salvar o produto.");
     } finally {
         setIsSaving(false);
     }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (productToDelete) {
-      deleteProduct(productToDelete.id);
+      await deleteProduct(productToDelete.id!);
       setProductToDelete(null);
     }
   };

@@ -39,10 +39,9 @@ const CheckoutModal: React.FC = () => {
 
   const handleConfirmCheckout = async () => {
     setIsProcessing(true);
-     // Simulating gateway interaction
-    if (settings.paymentGateway !== 'manual') {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-    }
+    // Simulate gateway interaction
+    await new Promise(resolve => setTimeout(resolve, settings.paymentGateway === 'manual' ? 500 : 2000));
+
     try {
         await processCartCheckout();
         setPaymentSuccess(true);
@@ -51,9 +50,9 @@ const CheckoutModal: React.FC = () => {
         }, 2500);
     } catch (e) {
         toast.error("Erro ao finalizar a compra.");
-         if (settings.paymentGateway === 'manual') {
+        if (settings.paymentGateway === 'manual') {
             setIsProcessing(false);
-         }
+        }
     }
   };
   

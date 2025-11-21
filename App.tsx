@@ -1,5 +1,4 @@
-
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Sidebar from './components/Header';
 import ScheduleView from './components/ScheduleView';
 import AnnouncementsView from './components/AnnouncementsView';
@@ -20,6 +19,7 @@ import { ShoppingCartIcon } from './components/icons/ShoppingCartIcon';
 import { MenuIcon } from './components/icons/MenuIcon';
 import { useAppStore } from './store';
 import { Toaster } from 'react-hot-toast';
+import { SpinnerIcon } from './components/icons/SpinnerIcon';
 
 
 const viewTitles: Record<View, string> = {
@@ -99,28 +99,29 @@ const App: React.FC = () => {
   const currentUser = useAppStore(state => state.currentUser);
   const currentView = useAppStore(state => state.currentView);
   const isSidebarCollapsed = useAppStore(state => state.isSidebarCollapsed);
-  const isInitialized = useAppStore(state => state.isInitialized);
   const initializeApp = useAppStore(state => state.initializeApp);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    initializeApp();
+    const init = async () => {
+      await initializeApp();
+      setIsLoading(false);
+    };
+    init();
   }, [initializeApp]);
 
   const memoizedView = useMemo(() => {
     return VIEW_COMPONENTS[currentView] || <DashboardView />;
   }, [currentView]);
-
-
-  if (!isInitialized) {
-    return (
-       <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-red-500 mb-4"></div>
-          <p className="text-lg font-semibold">Carregando academia...</p>
+  
+  const renderLoadingScreen = () => (
+    <div className="flex items-center justify-center min-h-screen bg-gray-900">
+        <div className="text-center">
+            <SpinnerIcon className="h-12 w-12 text-red-500 mx-auto" />
+            <p className="mt-4 text-lg text-gray-300">Carregando dados da academia...</p>
         </div>
-      </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <>
@@ -146,7 +147,7 @@ const App: React.FC = () => {
           },
         }}
       />
-      {!currentUser ? (
+      {isLoading ? renderLoadingScreen() : !currentUser ? (
         <LoginView />
       ) : (
         <div className="flex min-h-screen bg-gray-900 text-gray-200 font-sans">

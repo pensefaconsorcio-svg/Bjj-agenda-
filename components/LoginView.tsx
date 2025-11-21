@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ForgotPasswordModal from './ForgotPasswordModal';
 import { useAppStore } from '../store';
+import { SpinnerIcon } from './icons/SpinnerIcon';
 
 const LoginView: React.FC = () => {
     const { login, siteSettings } = useAppStore(state => ({
@@ -12,14 +13,22 @@ const LoginView: React.FC = () => {
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
     const [loginError, setLoginError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
 
-    const handleLoginSubmit = (e: React.FormEvent) => {
+    const handleLoginSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoginError('');
-        const success = login({ email: loginEmail, pass: loginPassword });
-        if (!success) {
-            setLoginError('E-mail ou senha inválidos.');
+        setIsLoading(true);
+        try {
+            const error = await login({ email: loginEmail, pass: loginPassword });
+            if (error) {
+                setLoginError(error);
+            }
+        } catch (err: any) {
+            setLoginError(err.message || "Ocorreu um erro desconhecido.");
+        } finally {
+            setIsLoading(false);
         }
     };
     
@@ -72,17 +81,19 @@ const LoginView: React.FC = () => {
 
                             {loginError && <p className="text-sm text-red-500 text-center">{loginError}</p>}
                             
-                            <div className="mt-4 p-4 bg-gray-800 border border-gray-700 rounded-lg">
-                                <p className="text-sm font-medium text-gray-300 mb-2">Credenciais de teste:</p>
-                                <ul className="text-xs text-gray-400 space-y-1">
-                                    <li><strong>Admin:</strong> admin@bjj.com / admin123</li>
-                                    <li><strong>Mestre:</strong> mestre@bjj.com / mestre123</li>
-                                    <li><strong>Usuário:</strong> user@bjj.com / user123</li>
-                                </ul>
+                            <div className="mt-4 p-4 bg-gray-800 border border-gray-700 rounded-lg space-y-2">
+                                <p className="text-sm font-medium text-gray-300">Use uma conta de teste:</p>
+                                <div className="text-xs text-gray-400 space-y-1">
+                                    <p><strong className="font-semibold text-gray-300">Admin:</strong> `admin@bjj.com` / `admin123`</p>
+                                    <p><strong className="font-semibold text-gray-300">Mestre:</strong> `mestre@bjj.com` / `mestre123`</p>
+                                    <p><strong className="font-semibold text-gray-300">Aluno:</strong> `user@bjj.com` / `user123`</p>
+                                </div>
                             </div>
 
                             <div>
-                                <button type="submit" className="w-full flex justify-center py-3 px-4 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors duration-300">Entrar</button>
+                                <button type="submit" disabled={isLoading} className="w-full flex justify-center py-3 px-4 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors duration-300 disabled:bg-red-800">
+                                  {isLoading ? <SpinnerIcon /> : 'Entrar'}
+                                </button>
                             </div>
                         </form>
                     </div>

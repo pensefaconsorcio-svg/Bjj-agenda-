@@ -14,12 +14,12 @@
     "@google/genai": "^1.29.1",
     "zustand": "^4.5.2",
     "use-sync-external-store": "^1.2.0",
-    "dexie": "^4.0.7",
     "react-hot-toast": "^2.4.1",
     "react-hook-form": "^7.52.0",
     "recharts": "^2.12.7",
     "zod": "^3.23.8",
-    "@hookform/resolvers": "^5.2.2"
+    "@hookform/resolvers": "^5.2.2",
+    "dexie": "^4.2.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
