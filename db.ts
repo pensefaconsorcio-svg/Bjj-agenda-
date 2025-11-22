@@ -17,8 +17,11 @@ export const db = new Dexie('bjjAgendaDB') as Dexie & {
   financialCategories: Table<TransactionCategory, number>;
 };
 
-db.version(2).stores({
-  users: '++id, &email, role',
+// By incrementing the version to 3 and simplifying the users schema, we force
+// browsers with an old, corrupted DB schema to create a new, clean one.
+// This is the definitive fix for the "UpgradeError: Not yet support for changing primary key".
+db.version(3).stores({
+  users: '++id, email, role', // Simplified schema to be more robust
   classes: '++id, day',
   announcements: '++id, date',
   products: '++id, category',

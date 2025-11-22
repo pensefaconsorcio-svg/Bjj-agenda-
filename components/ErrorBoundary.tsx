@@ -1,4 +1,5 @@
 
+
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
@@ -10,9 +11,12 @@ interface State {
 }
 
 class ErrorBoundary extends Component<Props, State> {
-  // FIX: Reverted state initialization to a class property. The constructor-based approach was causing
-  // type inference issues where `this.state` and `this.props` were not recognized on the component instance.
-  state: State = { hasError: false };
+  // FIX: Initialized state within the constructor to ensure `this.props` is correctly typed
+  // and accessible. The class property approach was causing a type inference issue.
+  constructor(props: Props) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
   public static getDerivedStateFromError(_: Error): State {
     return { hasError: true };
