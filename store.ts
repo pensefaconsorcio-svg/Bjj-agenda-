@@ -209,14 +209,21 @@ export const useAppStore = create<AppState>()(
       setSelectedUserId: (userId) => set({ selectedUserId: userId }),
 
       login: async ({ email, pass }) => {
+          const testPasswords: { [key: string]: string } = {
+            'admin@bjj.com': 'admin123',
+            'mestre@bjj.com': 'mestre123',
+            'user@bjj.com': 'user123',
+            'joana@bjj.com': 'user123',
+          };
           const user = await db.users.where('email').equals(email).first();
-          // For the deployed demo, we only check if the user exists.
-          // The password check is omitted for reliability in a stateless environment.
-          if (user) {
+          if (!user) {
+              return 'Usuário ou senha incorretos.';
+          }
+          if (testPasswords[email] === pass) {
               set({ currentUser: user });
               return null;
           }
-          return 'Usuário não encontrado.';
+          return 'Usuário ou senha incorretos.';
       },
       
       logout: () => {

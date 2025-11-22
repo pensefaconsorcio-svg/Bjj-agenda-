@@ -86,7 +86,8 @@ const LoginView: React.FC = () => {
                                 <div className="text-xs text-gray-400 space-y-1">
                                     <p><strong className="font-semibold text-gray-300">Admin:</strong> `admin@bjj.com` / `admin123`</p>
                                     <p><strong className="font-semibold text-gray-300">Mestre:</strong> `mestre@bjj.com` / `mestre123`</p>
-                                    <p><strong className="font-semibold text-gray-300">Aluno:</strong> `user@bjj.com` / `user123`</p>
+                                    <p><strong className="font-semibold text-gray-300">Aluno 1:</strong> `user@bjj.com` / `user123`</p>
+                                    <p><strong className="font-semibold text-gray-300">Aluno 2:</strong> `joana@bjj.com` / `user123`</p>
                                 </div>
                             </div>
 
