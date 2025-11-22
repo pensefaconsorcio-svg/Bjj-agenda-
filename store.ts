@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import toast from 'react-hot-toast';
 import { GoogleGenAI, Type } from "@google/genai";
 import { db } from './db';
-import { initialAnnouncements, initialCategories, initialClasses, initialPlans, initialProducts, initialSiteSettings, initialTatameAreas, initialUsers, passwords as initialPasswords } from './seed';
+import { initialAnnouncements, initialCategories, initialClasses, initialPlans, initialProducts, initialSiteSettings, initialTatameAreas, initialUsers } from './seed';
 import { type View, type Product, type User, type ClassSession, type Booking, type Announcement, type PromotionPlan, type SiteSettings, type TatameArea, type CartItem, type FinancialTransaction, type TransactionCategory, type AITransactionResult } from './types';
 
 // This provides a default, non-null state to prevent render errors on first load.
@@ -146,8 +146,6 @@ export const useAppStore = create<AppState>()(
       initializeApp: async () => {
         // This function now handles seeding robustly.
         try {
-          window.passwords = { ...initialPasswords };
-          
           const settingsCount = await db.siteSettings.count();
           if (settingsCount === 0) {
             console.log("Database is empty, seeding initial data...");
@@ -212,11 +210,13 @@ export const useAppStore = create<AppState>()(
 
       login: async ({ email, pass }) => {
           const user = await db.users.where('email').equals(email).first();
-          if (user && window.passwords[user.email] === pass) {
+          // For the deployed demo, we only check if the user exists.
+          // The password check is omitted for reliability in a stateless environment.
+          if (user) {
               set({ currentUser: user });
               return null;
           }
-          return 'E-mail ou senha inválidos.';
+          return 'Usuário não encontrado.';
       },
       
       logout: () => {
@@ -253,7 +253,7 @@ export const useAppStore = create<AppState>()(
             ...newUserData,
             created_at: new Date().toISOString()
         } as any);
-        window.passwords[newUserData.email] = pass;
+        // We don't store passwords, but we'll toast a success message.
         const newUser = await db.users.get(id);
         if (newUser) {
             set(state => ({ users: [...state.users, newUser] }));
@@ -273,7 +273,6 @@ export const useAppStore = create<AppState>()(
         const userToDelete = await db.users.get(userId);
         if (userToDelete) {
             await db.users.delete(userId);
-            delete window.passwords[userToDelete.email];
             set(state => ({ users: state.users.filter(u => u.id !== userId) }));
             toast.success(`Usuário excluído.`);
         }

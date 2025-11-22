@@ -1,12 +1,6 @@
 // This file now only exports the raw data for seeding.
 // The logic to populate the database has been moved to store.ts for robustness.
 
-declare global {
-  interface Window {
-    passwords: { [key: string]: string };
-  }
-}
-
 export const initialSiteSettings = {
     id: 1, // Primary key
     academyName: "Gracie Barra",
@@ -29,13 +23,6 @@ export const initialUsers = [
     { id: 3, name: 'Aluno Teste', email: 'user@bjj.com', role: 'user' as const, paymentDueDate: '2024-08-10', belt: 'roxa' as const, securityQuestion: 'Primeiro pet?', securityAnswer: 'rex' },
     { id: 4, name: 'Joana Silva', email: 'joana@bjj.com', role: 'user' as const, paymentDueDate: '2024-07-05', belt: 'azul' as const, securityQuestion: 'Primeiro pet?', securityAnswer: 'rex' },
 ];
-
-export const passwords = {
-    'admin@bjj.com': 'admin123',
-    'mestre@bjj.com': 'mestre123',
-    'user@bjj.com': 'user123',
-    'joana@bjj.com': 'user123',
-};
 
 export const initialClasses = [
     { id: 1, day: 'Segunda', time: '19:00 - 20:30', name: 'Gi Fundamentos', instructor: 'Professor Carlos', level: 'Iniciante' },
