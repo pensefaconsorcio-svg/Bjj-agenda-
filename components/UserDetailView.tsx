@@ -64,7 +64,7 @@ const UserDetailView: React.FC = () => {
     t.description.toLowerCase().includes(user.name.toLowerCase()) && t.type === 'income'
   ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const paymentStatus = getPaymentStatus(user.paymentDueDate);
+  const paymentStatus = getPaymentStatus(user.payment_due_date);
   const roleInfo = {
     user: { text: 'Usuário', color: 'bg-gray-600 text-gray-200' },
     mestre: { text: 'Mestre', color: 'bg-blue-300 text-blue-900' },
@@ -116,7 +116,7 @@ const UserDetailView: React.FC = () => {
           <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 text-center">
               <p className="text-sm font-medium text-gray-400">Data de Vencimento</p>
               <p className="mt-2 text-lg font-semibold text-gray-100 font-mono">
-                  {user.paymentDueDate ? new Date(user.paymentDueDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}
+                  {user.payment_due_date ? new Date(user.payment_due_date + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}
               </p>
           </div>
       </div>
@@ -136,7 +136,7 @@ const UserDetailView: React.FC = () => {
                             <th className="p-3 text-right">Valor</th>
                         </tr></thead>
                         <tbody>{userTransactions.map(t => {
-                            const category = categories.find(c => c.id === t.categoryId);
+                            const category = categories.find(c => c.id === t.category_id);
                             return (<tr key={t.id} className="border-b border-gray-700/50">
                                 <td className="p-3 font-medium text-gray-200">{t.description}</td>
                                 <td className="p-3 text-sm text-gray-300">{category ? `${category.emoji} ${category.name}` : 'Sem Categoria'}</td>

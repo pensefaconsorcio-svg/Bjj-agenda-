@@ -92,6 +92,7 @@ interface AppState {
   addTransaction: (newTransaction: Omit<FinancialTransaction, 'id'>) => Promise<void>;
   deleteTransaction: (transactionId: number) => Promise<void>;
   addCategory: (newCategory: Omit<TransactionCategory, 'id'>) => Promise<void>;
+  updateCategory: (updatedCategory: TransactionCategory) => Promise<void>;
   deleteCategory: (categoryId: number) => Promise<void>;
   processAiCommand: (command: string) => Promise<AITransactionResult>;
   
@@ -276,7 +277,7 @@ export const useAppStore = create<AppState>()(
         const cart = get().cart;
         const existing = cart.find(item => item.id === product.id);
         if (existing) {
-            get().updateCartQuantity(product.id, existing.quantity + 1);
+            get().updateCartQuantity(product.id!, existing.quantity + 1);
         } else {
             set(state => ({ cart: [...state.cart, { ...product, quantity: 1 }] }));
         }
@@ -395,6 +396,14 @@ export const useAppStore = create<AppState>()(
         if (error) throw error;
         set(state => ({ financialCategories: [...state.financialCategories, data] }));
       },
+      updateCategory: async (updatedCategory) => {
+        const { error } = await supabase.from('financial_categories').update(updatedCategory).eq('id', updatedCategory.id);
+        if (error) throw error;
+        set(state => ({
+          financialCategories: state.financialCategories.map(c => c.id === updatedCategory.id ? updatedCategory : c)
+        }));
+        toast.success('Categoria atualizada!');
+      },
       deleteCategory: async (id) => {
         const { error } = await supabase.from('financial_categories').delete().eq('id', id);
         if (error) throw error;
@@ -402,8 +411,45 @@ export const useAppStore = create<AppState>()(
       },
 
       processAiCommand: async (command) => {
-        // AI implementation remains the same
-        return { success: false, message: "Função de IA não implementada com Supabase ainda." };
+        const categories = get().financialCategories;
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+        
+        try {
+            const result = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: command,
+                config: {
+                    systemInstruction: `Você é um assistente financeiro para uma academia de Jiu-Jitsu. Sua tarefa é extrair informações de transações financeiras de um texto em linguagem natural. A data de hoje é ${new Date().toLocaleDateString('pt-BR')}. As categorias disponíveis são: ${JSON.stringify(categories)}. Se a categoria mencionada não existir, use a mais próxima. Se não houver próxima, retorne um erro. Retorne apenas um objeto JSON com o formato especificado.`,
+                    responseMimeType: 'application/json',
+                    responseSchema: {
+                        type: Type.OBJECT,
+                        properties: {
+                            description: { type: Type.STRING },
+                            amount: { type: Type.NUMBER },
+                            type: { type: Type.STRING, enum: ['income', 'expense'] },
+                            category_id: { type: Type.NUMBER }
+                        },
+                        required: ['description', 'amount', 'type', 'category_id']
+                    }
+                }
+            });
+
+            const jsonText = result.text.trim();
+            const transactionData = JSON.parse(jsonText);
+            
+            const transaction: Omit<FinancialTransaction, 'id'> = {
+                ...transactionData,
+                date: new Date().toISOString().split('T')[0],
+            };
+            
+            await get().addTransaction(transaction);
+            
+            return { success: true, message: 'Transação adicionada com sucesso!', transaction: transactionData };
+
+        } catch (error) {
+            console.error("AI Error:", error);
+            return { success: false, message: 'Não consegui entender o comando. Tente novamente.' };
+        }
       },
       
       processPlanPayment: async (planId) => {

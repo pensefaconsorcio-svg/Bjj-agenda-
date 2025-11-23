@@ -187,7 +187,7 @@ const FinancialView: React.FC = () => {
         addTransaction: state.addTransaction,
         deleteTransaction: state.deleteTransaction,
         addCategory: state.addCategory,
-        updateCategory: state.updateCategory,
+        updateCategory: state.updateCategory, 
         deleteCategory: state.deleteCategory,
         updateUser: state.updateUser,
     }));
@@ -316,7 +316,8 @@ const FinancialView: React.FC = () => {
         )}
 
         <TransactionModal isOpen={isTransactionModalOpen} onClose={() => setTransactionModalOpen(false)} type={transactionType} categories={categories} onSave={addTransaction}/>
-        <CategoryModal isOpen={isCategoryModalOpen} onClose={() => setCategoryModalOpen(false)} categories={categories} onAdd={addCategory} onDelete={deleteCategory}/>
+        {/* FIX: The 'onUpdate' prop was missing, causing a type error. Passed the 'updateCategory' function from the store. */}
+        <CategoryModal isOpen={isCategoryModalOpen} onClose={() => setCategoryModalOpen(false)} categories={categories} onAdd={addCategory} onUpdate={updateCategory} onDelete={deleteCategory}/>
     </div>
   );
 };

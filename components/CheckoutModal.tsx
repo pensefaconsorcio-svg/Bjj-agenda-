@@ -30,8 +30,8 @@ const CheckoutModal: React.FC = () => {
   const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   
   const handleCopy = () => {
-    if (settings.pixKey) {
-        navigator.clipboard.writeText(settings.pixKey);
+    if (settings.pix_key) {
+        navigator.clipboard.writeText(settings.pix_key);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     }
@@ -40,7 +40,7 @@ const CheckoutModal: React.FC = () => {
   const handleConfirmCheckout = async () => {
     setIsProcessing(true);
     // Simulate gateway interaction
-    await new Promise(resolve => setTimeout(resolve, settings.paymentGateway === 'manual' ? 500 : 2000));
+    await new Promise(resolve => setTimeout(resolve, settings.payment_gateway === 'manual' ? 500 : 2000));
 
     try {
         await processCartCheckout();
@@ -50,7 +50,7 @@ const CheckoutModal: React.FC = () => {
         }, 2500);
     } catch (e) {
         toast.error("Erro ao finalizar a compra.");
-        if (settings.paymentGateway === 'manual') {
+        if (settings.payment_gateway === 'manual') {
             setIsProcessing(false);
         }
     }
@@ -59,7 +59,7 @@ const CheckoutModal: React.FC = () => {
   const gatewayName = {
       mercadopago: 'Mercado Pago',
       asaas: 'Asaas'
-  }[settings.paymentGateway] || 'Gateway';
+  }[settings.payment_gateway] || 'Gateway';
 
 
   const renderContent = () => {
@@ -76,7 +76,7 @@ const CheckoutModal: React.FC = () => {
                 ) : (
                     <>
                         <h3 className="text-xl font-semibold text-gray-100">
-                            {settings.paymentGateway === 'manual' ? 'Processando...' : `Conectando com ${gatewayName}...`}
+                            {settings.payment_gateway === 'manual' ? 'Processando...' : `Conectando com ${gatewayName}...`}
                         </h3>
                         <p className="text-gray-400">Por favor, aguarde.</p>
                     </>
@@ -85,7 +85,7 @@ const CheckoutModal: React.FC = () => {
         );
     }
     
-    if (settings.paymentGateway === 'manual') {
+    if (settings.payment_gateway === 'manual') {
       return (
         <div className="space-y-4">
           <div>
@@ -96,10 +96,10 @@ const CheckoutModal: React.FC = () => {
           <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
             <p className="text-sm font-medium text-gray-300 mb-1">Chave PIX:</p>
             <div className="flex items-center justify-between bg-gray-700 p-2 rounded-md">
-              <p className="font-mono text-gray-100 truncate pr-2" title={settings.pixKey}>{settings.pixKey || "Não configurada"}</p>
+              <p className="font-mono text-gray-100 truncate pr-2" title={settings.pix_key}>{settings.pix_key || "Não configurada"}</p>
               <button 
                 onClick={handleCopy}
-                disabled={!settings.pixKey || copied}
+                disabled={!settings.pix_key || copied}
                 className="flex items-center space-x-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-md transition-all shadow-sm disabled:bg-gray-500 disabled:cursor-not-allowed"
               >
                 {copied ? <CheckCircleIcon/> : <ClipboardCopyIcon/>}
@@ -110,7 +110,7 @@ const CheckoutModal: React.FC = () => {
 
           <div>
              <p className="text-sm font-medium text-gray-300 mb-1">Instruções:</p>
-             <p className="text-gray-400 text-sm whitespace-pre-wrap">{settings.paymentInstructions || "Contate a academia para finalizar o pagamento."}</p>
+             <p className="text-gray-400 text-sm whitespace-pre-wrap">{settings.payment_instructions || "Contate a academia para finalizar o pagamento."}</p>
           </div>
 
           <div className="mt-6 flex justify-end space-x-3">

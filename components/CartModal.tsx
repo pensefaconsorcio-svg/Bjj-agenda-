@@ -55,7 +55,7 @@ const CartModal: React.FC = () => {
             <div className="flex-grow overflow-y-auto p-4 space-y-4">
               {cartItems.map(item => (
                 <div key={item.id} className="flex items-center space-x-4 bg-gray-900/50 p-3 rounded-lg">
-                  <img src={item.imageUrl} alt={item.name} className="w-16 h-16 object-cover rounded-md flex-shrink-0"/>
+                  <img src={item.image_url} alt={item.name} className="w-16 h-16 object-cover rounded-md flex-shrink-0"/>
                   <div className="flex-grow">
                     <p className="font-semibold text-gray-100">{item.name}</p>
                     <p className="text-sm text-red-500 font-bold">R$ {item.price.toFixed(2)}</p>
