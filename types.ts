@@ -1,15 +1,12 @@
 export type Belt = 'branca' | 'azul' | 'roxa' | 'marrom' | 'preta';
 
 export interface User {
-  id: number;
+  id: string; // Changed from number to string for Supabase UUID
   email: string;
   name: string;
   role: 'admin' | 'user' | 'mestre';
-  paymentDueDate: string | null;
+  payment_due_date: string | null;
   belt: Belt;
-  securityQuestion?: string;
-  securityAnswer?: string;
-  created_at?: string;
 }
 
 export interface ClassSession {
@@ -32,7 +29,7 @@ export interface Product {
   id?: number;
   name: string;
   price: number;
-  imageUrl: string;
+  image_url: string; // Changed from imageUrl
   category: string;
 }
 
@@ -42,20 +39,20 @@ export interface CartItem extends Product {
 
 export interface Booking {
   id?: number;
-  bookingKey: string; // Composite key: `${tatameId}-${date}-${timeSlot}`
-  tatameId: string;
-  tatameName: string; // For display purposes
-  userId: number; // Foreign key to User ID
-  userEmail: string;
+  booking_key: string; // date-tatame_id-time_slot
+  tatame_id: string;
+  tatame_name: string;
+  user_id: string;
+  user_email: string;
   date: string; // YYYY-MM-DD
-  timeSlot: string;
+  time_slot: string;
   status: 'pending' | 'confirmed';
 }
 
 export interface TatameArea {
   id: string;
   name: string;
-  timeSlots: string[];
+  time_slots: string[];
 }
 
 export interface PromotionPlan {
@@ -65,23 +62,23 @@ export interface PromotionPlan {
   duration: string;
   total: number | null;
   features: string[];
-  isBestValue: boolean;
+  is_best_value: boolean;
 }
 
 export interface SiteSettings {
   id: number;
-  academyName: string;
-  instagramUrl: string;
-  facebookUrl: string;
-  xUrl: string;
-  whatsappUrl: string;
-  pixKey: string;
-  paymentInstructions: string;
-  logoUrl: string | null;
-  loginImageUrl: string | null;
-  paymentGateway: 'manual' | 'mercadopago' | 'asaas';
-  mercadoPagoApiKey: string;
-  asaasApiKey: string;
+  academy_name: string;
+  instagram_url: string;
+  facebook_url: string;
+  x_url: string;
+  whatsapp_url: string;
+  pix_key: string;
+  payment_instructions: string;
+  logo_url: string | null;
+  login_image_url: string | null;
+  payment_gateway: 'manual' | 'mercadopago' | 'asaas';
+  mercado_pago_api_key: string;
+  asaas_api_key: string;
 }
 
 export interface TransactionCategory {
@@ -97,7 +94,7 @@ export interface FinancialTransaction {
   amount: number;
   date: string; // YYYY-MM-DD
   type: 'income' | 'expense';
-  categoryId: number;
+  category_id: number;
 }
 
 export interface AITransactionResult {

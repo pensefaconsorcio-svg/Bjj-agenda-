@@ -41,7 +41,6 @@ const TransactionModal: React.FC<{
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!description || !amount || !date || categoryId === '') return;
-        // FIX: Changed categoryId to category_id to match the FinancialTransaction type.
         onSave({ description, amount: parseFloat(amount), date, category_id: Number(categoryId), type });
         onClose();
     };
@@ -72,9 +71,8 @@ const CategoryModal: React.FC<{
     onClose: () => void,
     categories: TransactionCategory[],
     onAdd: (category: Omit<TransactionCategory, 'id'>) => void,
-    onUpdate: (category: TransactionCategory) => void,
     onDelete: (id: number) => void
-}> = ({ isOpen, onClose, categories, onAdd, onUpdate, onDelete }) => {
+}> = ({ isOpen, onClose, categories, onAdd, onDelete }) => {
     const [name, setName] = useState('');
     const [emoji, setEmoji] = useState('');
     const [type, setType] = useState<'income' | 'expense'>('income');
@@ -177,7 +175,6 @@ const FinancialView: React.FC = () => {
         addTransaction, 
         deleteTransaction, 
         addCategory, 
-        updateCategory, 
         deleteCategory,
         updateUser
     } = useAppStore(state => ({
@@ -187,7 +184,6 @@ const FinancialView: React.FC = () => {
         addTransaction: state.addTransaction,
         deleteTransaction: state.deleteTransaction,
         addCategory: state.addCategory,
-        updateCategory: state.updateCategory,
         deleteCategory: state.deleteCategory,
         updateUser: state.updateUser,
     }));
@@ -253,7 +249,6 @@ const FinancialView: React.FC = () => {
                                 <th className="p-3">Tipo</th><th className="p-3">Descrição</th><th className="p-3">Categoria</th><th className="p-3">Data</th><th className="p-3 text-right">Valor</th><th className="p-3"></th>
                             </tr></thead>
                             <tbody>{sortedTransactions.map(t => {
-                                // FIX: Changed categoryId to category_id to match the FinancialTransaction type.
                                 const category = categories.find(c => c.id === t.category_id);
                                 return (<tr key={t.id} className="border-b border-gray-700/50 hover:bg-gray-700/30">
                                     <td className="p-3">{t.type === 'income' ? <ArrowUpCircleIcon className="text-green-500"/> : <ArrowDownCircleIcon className="text-red-500"/>}</td>
@@ -284,7 +279,6 @@ const FinancialView: React.FC = () => {
                             <th className="p-4 text-sm font-semibold text-gray-300">Status</th>
                         </tr></thead>
                         <tbody className="divide-y divide-gray-700">{users.filter(u => u.role === 'user').map(student => {
-                            // FIX: Changed paymentDueDate to payment_due_date to match the User type.
                             const paymentStatus = getPaymentStatus(student.payment_due_date);
                             return (<tr key={student.id} className="hover:bg-gray-700/50">
                                 <td className="p-4 font-medium text-gray-100">{student.name}</td>
@@ -292,7 +286,6 @@ const FinancialView: React.FC = () => {
                                 <td className="p-4">
                                     <select
                                         value={student.belt}
-                                        // FIX: Pass the user ID to the updateUser function.
                                         onChange={(e) => updateUser({ id: student.id, belt: e.target.value as Belt })}
                                         onClick={(e) => e.stopPropagation()}
                                         className={`px-3 py-1 text-sm font-semibold rounded-lg border-transparent focus:ring-2 focus:ring-red-500 focus:outline-none ${beltColorMap[student.belt]}`}
@@ -304,7 +297,6 @@ const FinancialView: React.FC = () => {
                                         <option value="preta" className="bg-gray-700 text-white">Preta</option>
                                     </select>
                                 </td>
-                                {/* FIX: Changed paymentDueDate to payment_due_date to match the User type. */}
                                 <td className="p-4 text-gray-300 font-mono text-sm">{student.payment_due_date ? new Date(student.payment_due_date + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</td>
                                 <td className="p-4"><span className={`px-2 py-1 text-xs font-bold rounded-full ${paymentStatus.color}`}>{paymentStatus.text}</span></td>
                             </tr>);

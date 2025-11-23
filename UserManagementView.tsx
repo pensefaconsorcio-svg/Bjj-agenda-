@@ -12,7 +12,6 @@ import toast from 'react-hot-toast';
 import { type Belt, type User } from '../types';
 
 // Schema for user data validation
-// FIX: Changed paymentDueDate to payment_due_date to match the User type.
 const userSchema = z.object({
   name: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
   email: z.string().email('Formato de e-mail inválido.'),
@@ -73,7 +72,6 @@ const UserManagementView: React.FC = () => {
           reset({
               ...editingUser,
               belt: editingUser.belt || 'branca',
-              // FIX: Changed paymentDueDate to payment_due_date to match the User type.
               payment_due_date: editingUser.payment_due_date || new Date().toISOString().split('T')[0]
           });
       } else {
@@ -83,7 +81,6 @@ const UserManagementView: React.FC = () => {
               password: '',
               role: currentUser.role === 'mestre' ? 'user' : 'user',
               belt: 'branca',
-              // FIX: Changed paymentDueDate to payment_due_date to match the User type.
               payment_due_date: new Date().toISOString().split('T')[0],
           });
       }
@@ -122,7 +119,6 @@ const UserManagementView: React.FC = () => {
             toast.error("A senha é obrigatória e deve ter no mínimo 6 caracteres.");
             return;
          }
-         // FIX: Separated auth data from profile data for user creation.
          const { email, password, ...profileData } = data;
          const result = await createUser(profileData as any, { email, pass: password });
          if (result.success) {
@@ -175,7 +171,6 @@ const UserManagementView: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-700">
               {users.map(user => {
-                  // FIX: Changed paymentDueDate to payment_due_date to match the User type.
                   const paymentStatus = getPaymentStatus(user.payment_due_date);
                   const isActionDisabled = (currentUser.role === 'mestre' && user.role === 'admin') || user.id === currentUser.id;
                   
@@ -190,7 +185,6 @@ const UserManagementView: React.FC = () => {
                         <p className="text-sm text-gray-400">{user.email}</p>
                       </td>
                       <td className="p-4 text-gray-300 font-mono text-sm">
-                        {/* FIX: Changed paymentDueDate to payment_due_date to match the User type. */}
                         {user.payment_due_date ? new Date(user.payment_due_date + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}
                       </td>
                       <td className="p-4">
@@ -301,7 +295,6 @@ const UserManagementView: React.FC = () => {
           </div>
            {watchRole === 'user' && (
               <div>
-                {/* FIX: Changed paymentDueDate to payment_due_date to match the User type. */}
                 <label htmlFor="payment_due_date" className="block text-sm font-medium text-gray-300 mb-1">Data de Vencimento</label>
                 <input {...register('payment_due_date')} type="date" id="payment_due_date" className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg" />
                 {errors.payment_due_date && <p className="text-red-500 text-xs mt-1">{errors.payment_due_date.message}</p>}

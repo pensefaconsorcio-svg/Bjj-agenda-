@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import ForgotPasswordModal from './ForgotPasswordModal';
 import { useAppStore } from '../store';
@@ -83,12 +82,11 @@ const LoginView: React.FC = () => {
                             {loginError && <p className="text-sm text-red-500 text-center">{loginError}</p>}
                             
                             <div className="mt-4 p-4 bg-gray-800 border border-gray-700 rounded-lg space-y-2">
-                                <p className="text-sm font-medium text-gray-300">Use uma conta de teste:</p>
+                                <p className="text-sm font-medium text-gray-300">Use uma conta de teste (criada no Supabase):</p>
                                 <div className="text-xs text-gray-400 space-y-1">
                                     <p><strong className="font-semibold text-gray-300">Admin:</strong> `admin@bjj.com` / `admin123`</p>
                                     <p><strong className="font-semibold text-gray-300">Mestre:</strong> `mestre@bjj.com` / `mestre123`</p>
-                                    <p><strong className="font-semibold text-gray-300">Aluno 1:</strong> `user@bjj.com` / `user123`</p>
-                                    <p><strong className="font-semibold text-gray-300">Aluno 2:</strong> `joana@bjj.com` / `user123`</p>
+                                    <p><strong className="font-semibold text-gray-300">Aluno:</strong> `user@bjj.com` / `user123`</p>
                                 </div>
                             </div>
 

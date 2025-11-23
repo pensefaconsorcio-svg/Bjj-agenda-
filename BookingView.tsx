@@ -20,7 +20,6 @@ const TatameAreaEditor: React.FC<{
   onClose: () => void;
 }> = ({ area, onSave, onClose }) => {
     const [name, setName] = useState(area.name);
-    // FIX: Changed timeSlots to time_slots to match the type definition.
     const [timeSlots, setTimeSlots] = useState([...area.time_slots]);
     const [newTimeSlot, setNewTimeSlot] = useState('');
 
@@ -38,7 +37,6 @@ const TatameAreaEditor: React.FC<{
     };
     
     const handleSave = () => {
-        // FIX: Changed timeSlots to time_slots to match the type definition.
         onSave({ ...area, name, time_slots: timeSlots });
         onClose();
     };
@@ -102,7 +100,6 @@ const BookingView: React.FC = () => {
     const [editingArea, setEditingArea] = useState<TatameArea | null>(null);
     const [isAddAreaModalOpen, setIsAddAreaModalOpen] = useState(false);
     
-    // State for the "Add Tatame Area" modal form
     const [newAreaName, setNewAreaName] = useState('');
     const [newAreaTimeSlots, setNewAreaTimeSlots] = useState<string[]>([]);
     const [newTimeSlotInput, setNewTimeSlotInput] = useState('');
@@ -114,12 +111,10 @@ const BookingView: React.FC = () => {
     };
 
     const handleBookClick = (tatameId: string, tatameName: string, timeSlot: string) => {
-        // FIX: Changed property names to snake_case to match the Booking type.
         setConfirmingBooking({ tatame_id: tatameId, tatame_name: tatameName, date: selectedDate, time_slot: timeSlot });
     };
     
     const handleCancelClick = (booking: Booking) => {
-        // FIX: Changed property names to snake_case to match the Booking type.
         if (window.confirm(`Tem certeza que deseja cancelar a reserva para "${booking.tatame_name}" no horário ${booking.time_slot}?`)) {
             cancelBooking(booking.id!);
         }
@@ -137,7 +132,6 @@ const BookingView: React.FC = () => {
         }
     };
 
-    // --- Handlers for Add Tatame Area Modal ---
     const handleOpenAddAreaModal = () => {
       setNewAreaName('');
       setNewAreaTimeSlots([]);
@@ -168,11 +162,9 @@ const BookingView: React.FC = () => {
             alert('O nome da área não pode ser vazio.');
             return;
         }
-        // FIX: Changed timeSlots to time_slots to match the type definition.
         addTatameArea({ name: newAreaName, time_slots: newAreaTimeSlots });
         handleCloseAddAreaModal();
     };
-    // ------------------------------------------
 
     const bookingsForSelectedDate = bookings.filter(b => b.date === selectedDate);
 
@@ -218,14 +210,11 @@ const BookingView: React.FC = () => {
                             )}
                         </div>
                         <div className="space-y-3">
-                            {/* FIX: Changed timeSlots to time_slots to match the type definition. */}
                             {area.time_slots.map(timeSlot => {
                                 const booking = bookingsForSelectedDate.find(
-                                    // FIX: Changed property names to snake_case to match the Booking type.
                                     b => b.tatame_id === area.id && b.time_slot === timeSlot
                                 );
 
-                                // FIX: Changed userId to user_id to match the Booking type.
                                 const canUserCancel = booking && booking.user_id === user.id;
 
                                 return (
@@ -304,10 +293,8 @@ const BookingView: React.FC = () => {
                     <div>
                         <p className="text-gray-300">Sua solicitação será enviada para aprovação do administrador. Deseja continuar?</p>
                         <div className="mt-4 bg-gray-900 p-4 rounded-lg border border-gray-700">
-                            {/* FIX: Changed property names to snake_case to match the Booking type. */}
                             <p><span className="font-semibold text-gray-400">Tatame:</span> <span className="text-gray-100">{confirmingBooking.tatame_name}</span></p>
                             <p><span className="font-semibold text-gray-400">Data:</span> <span className="text-gray-100">{new Date(confirmingBooking.date + 'T00:00:00').toLocaleDateString('pt-BR')}</span></p>
-                            {/* FIX: Changed property names to snake_case to match the Booking type. */}
                             <p><span className="font-semibold text-gray-400">Horário:</span> <span className="text-gray-100">{confirmingBooking.time_slot}</span></p>
                         </div>
                         <div className="mt-6 flex justify-end space-x-4">

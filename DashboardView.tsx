@@ -68,17 +68,13 @@ const UserDashboard: React.FC<{ user: User }> = ({ user }) => {
 
   const upcomingClasses = getUpcomingClasses(classes);
   const latestAnnouncement = announcements[0];
-  // FIX: Changed userId to user_id to match the Booking type.
   const myUpcomingBookings = bookings.filter(b => b.user_id === user.id && new Date(b.date + 'T00:00:00') >= new Date(new Date().toDateString())).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  // FIX: Changed userId to user_id to match the Booking type.
   const bookingsThisMonth = bookings.filter(b => b.user_id === user.id && new Date(b.date).getMonth() === new Date().getMonth()).length;
 
   const renderPaymentReminder = () => {
-    // FIX: Changed paymentDueDate to payment_due_date to match the User type.
     if (user.role !== 'user' || !user.payment_due_date) return null;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    // FIX: Changed paymentDueDate to payment_due_date to match the User type.
     const dueDate = new Date(user.payment_due_date + 'T00:00:00');
     const diffTime = dueDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -112,7 +108,6 @@ const UserDashboard: React.FC<{ user: User }> = ({ user }) => {
             <h3 className="text-lg font-bold text-gray-100 mb-3">Sua Próxima Reserva</h3>
             {myUpcomingBookings.length > 0 ? (
                 <div>
-                    {/* FIX: Changed tatameName and timeSlot to match the Booking type. */}
                     <p className="text-2xl font-semibold text-red-500">{myUpcomingBookings[0].tatame_name}</p>
                     <p className="text-gray-300 font-mono mt-1">{myUpcomingBookings[0].time_slot}</p>
                     <p className="text-sm text-gray-400">{new Date(myUpcomingBookings[0].date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
@@ -171,9 +166,7 @@ const AdminDashboard: React.FC = () => {
         today.setHours(0,0,0,0);
         
         studentUsers.forEach(u => {
-            // FIX: Changed paymentDueDate to payment_due_date to match the User type.
             if (u.payment_due_date) {
-                // FIX: Changed paymentDueDate to payment_due_date to match the User type.
                 const dueDate = new Date(u.payment_due_date + 'T00:00:00');
                 if (dueDate < today) overdue++;
                 else onTime++;
@@ -209,7 +202,6 @@ const AdminDashboard: React.FC = () => {
                         {pendingBookings.map(b => (
                             <div key={b.id} className="bg-gray-900 p-3 rounded-lg flex flex-wrap items-center justify-between gap-4">
                                 <div>
-                                    {/* FIX: Changed tatameName and timeSlot to match the Booking type. */}
                                     <p className="font-semibold text-gray-100">{b.tatame_name} - {b.time_slot}</p>
                                     <p className="text-sm text-gray-400">{b.user_email} - {new Date(b.date + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
                                 </div>

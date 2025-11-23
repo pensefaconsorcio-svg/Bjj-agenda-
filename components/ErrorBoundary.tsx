@@ -1,5 +1,3 @@
-
-
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
@@ -11,22 +9,27 @@ interface State {
 }
 
 class ErrorBoundary extends Component<Props, State> {
-  // FIX: Initialized state within the constructor to ensure `this.props` is correctly typed
-  // and accessible. The class property approach was causing a type inference issue.
+  // FIX: Initialize state as a class property instead of using a constructor.
+  // This is a more modern and common pattern in React class components and resolves
+  // issues where `this.state` and `this.props` might not be correctly recognized.
+  
+  // FIX: The error "Property 'props' does not exist" can occur in some environments
+  // when using class property initializers. Using a constructor is a more robust
+  // way to initialize state and ensure `this.props` is available.
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
   }
 
-  public static getDerivedStateFromError(_: Error): State {
+  static getDerivedStateFromError(_: Error): State {
     return { hasError: true };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
   }
 
-  public render() {
+  render() {
     if (this.state.hasError) {
       return (
         <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">

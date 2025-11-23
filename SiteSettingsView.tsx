@@ -55,7 +55,6 @@ const SiteSettingsView: React.FC = () => {
           <div className="space-y-6">
             <h3 className="text-lg font-medium text-gray-200 border-b border-gray-700 pb-2">Informações Gerais</h3>
             <div>
-              {/* FIX: Changed property name to snake_case */}
               <label htmlFor="academy_name" className="block text-sm font-medium text-gray-300 mb-1">Nome da Academia</label>
               <input 
                 type="text" 
@@ -73,7 +72,6 @@ const SiteSettingsView: React.FC = () => {
           <div className="space-y-6">
             <h3 className="text-lg font-medium text-gray-200 border-b border-gray-700 pb-2">Redes Sociais</h3>
              <div>
-              {/* FIX: Changed property name to snake_case */}
               <label htmlFor="instagram_url" className="block text-sm font-medium text-gray-300 mb-1">URL do Instagram</label>
               <input 
                 type="url" 
@@ -86,7 +84,6 @@ const SiteSettingsView: React.FC = () => {
               />
             </div>
              <div>
-              {/* FIX: Changed property name to snake_case */}
               <label htmlFor="facebook_url" className="block text-sm font-medium text-gray-300 mb-1">URL do Facebook</label>
               <input 
                 type="url" 
@@ -99,7 +96,6 @@ const SiteSettingsView: React.FC = () => {
               />
             </div>
              <div>
-              {/* FIX: Changed property name to snake_case */}
               <label htmlFor="x_url" className="block text-sm font-medium text-gray-300 mb-1">URL do X (Twitter)</label>
               <input 
                 type="url" 
@@ -112,7 +108,6 @@ const SiteSettingsView: React.FC = () => {
               />
             </div>
             <div>
-              {/* FIX: Changed property name to snake_case */}
               <label htmlFor="whatsapp_url" className="block text-sm font-medium text-gray-300 mb-1">URL do WhatsApp</label>
               <input 
                 type="url" 
@@ -130,7 +125,6 @@ const SiteSettingsView: React.FC = () => {
           <div className="space-y-6">
             <h3 className="text-lg font-medium text-gray-200 border-b border-gray-700 pb-2">Configurações de Pagamento</h3>
              <div>
-                {/* FIX: Changed property name to snake_case */}
                 <label htmlFor="payment_gateway" className="block text-sm font-medium text-gray-300 mb-1">Gateway de Pagamento</label>
                  <select 
                     id="payment_gateway" 
@@ -145,35 +139,28 @@ const SiteSettingsView: React.FC = () => {
                 </select>
             </div>
             
-            {/* FIX: Changed property name to snake_case */}
             {settings.payment_gateway === 'manual' && (
                 <>
                     <div>
-                        {/* FIX: Changed property name to snake_case */}
                         <label htmlFor="pix_key" className="block text-sm font-medium text-gray-300 mb-1">Chave PIX para Pagamentos</label>
                         <input type="text" id="pix_key" name="pix_key" value={settings.pix_key} onChange={handleChange} placeholder="E-mail, CPF/CNPJ, Telefone ou Chave Aleatória" className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg"/>
                     </div>
                     <div>
-                        {/* FIX: Changed property name to snake_case */}
                         <label htmlFor="payment_instructions" className="block text-sm font-medium text-gray-300 mb-1">Instruções de Pagamento</label>
                         <textarea id="payment_instructions" name="payment_instructions" value={settings.payment_instructions} onChange={handleChange} rows={3} placeholder="Ex: Após o pagamento, envie o comprovante..." className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg"/>
                     </div>
                 </>
             )}
 
-            {/* FIX: Changed property name to snake_case */}
             {settings.payment_gateway === 'mercadopago' && (
                  <div>
-                    {/* FIX: Changed property name to snake_case */}
                     <label htmlFor="mercado_pago_api_key" className="block text-sm font-medium text-gray-300 mb-1">Chave de API do Mercado Pago</label>
                     <input type="password" id="mercado_pago_api_key" name="mercado_pago_api_key" value={settings.mercado_pago_api_key} onChange={handleChange} placeholder="Insira sua Chave de API" className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg"/>
                 </div>
             )}
 
-            {/* FIX: Changed property name to snake_case */}
             {settings.payment_gateway === 'asaas' && (
                  <div>
-                    {/* FIX: Changed property name to snake_case */}
                     <label htmlFor="asaas_api_key" className="block text-sm font-medium text-gray-300 mb-1">Chave de API do Asaas</label>
                     <input type="password" id="asaas_api_key" name="asaas_api_key" value={settings.asaas_api_key} onChange={handleChange} placeholder="Insira sua Chave de API" className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg"/>
                 </div>
@@ -184,11 +171,9 @@ const SiteSettingsView: React.FC = () => {
           <div className="space-y-6">
               <h3 className="text-lg font-medium text-gray-200 border-b border-gray-700 pb-2">Personalização Visual</h3>
               <div>
-                {/* FIX: Changed property name to snake_case */}
                 <label htmlFor="logo_url" className="block text-sm font-medium text-gray-300 mb-1">Logo da Academia (PNG, JPG, SVG)</label>
                 <div className="mt-2 flex items-center space-x-4">
                   <div className="flex-shrink-0 h-16 w-16 bg-gray-700 rounded-md flex items-center justify-center border border-gray-600">
-                    {/* FIX: Changed property name to snake_case */}
                     {settings.logo_url ? (
                       <img src={settings.logo_url} alt="Logo Preview" className="h-full w-full object-contain rounded-md" />
                     ) : (
@@ -207,10 +192,8 @@ const SiteSettingsView: React.FC = () => {
               </div>
         
               <div>
-                {/* FIX: Changed property name to snake_case */}
                 <label htmlFor="login_image_url" className="block text-sm font-medium text-gray-300 mb-1">Imagem da Página de Login (JPG, PNG)</label>
                 <div className="mt-2">
-                    {/* FIX: Changed property name to snake_case */}
                     {settings.login_image_url && (
                         <div className="mb-4">
                             <img src={settings.login_image_url} alt="Login Image Preview" className="w-full h-40 object-cover rounded-md border border-gray-600" />

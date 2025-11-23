@@ -35,9 +35,7 @@ const SubscriptionPaymentModal: React.FC<SubscriptionPaymentModalProps> = ({ isO
   const total = plan.total ?? plan.price;
   
   const handleCopy = () => {
-    // FIX: Changed pixKey to pix_key to match the SiteSettings type.
     if (settings.pix_key) {
-        // FIX: Changed pixKey to pix_key to match the SiteSettings type.
         navigator.clipboard.writeText(settings.pix_key);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
@@ -49,7 +47,6 @@ const SubscriptionPaymentModal: React.FC<SubscriptionPaymentModalProps> = ({ isO
     setIsProcessing(true);
     
     // Simulating gateway interaction
-    // FIX: Changed paymentGateway to payment_gateway to match the SiteSettings type.
     await new Promise(resolve => setTimeout(resolve, settings.payment_gateway === 'manual' ? 500 : 2000));
 
     try {
@@ -61,7 +58,6 @@ const SubscriptionPaymentModal: React.FC<SubscriptionPaymentModalProps> = ({ isO
     } catch (error) {
         toast.error("Erro ao processar pagamento.");
     } finally {
-        // FIX: Changed paymentGateway to payment_gateway to match the SiteSettings type.
         if (settings.payment_gateway === 'manual') {
             setIsProcessing(false);
         }
@@ -71,7 +67,6 @@ const SubscriptionPaymentModal: React.FC<SubscriptionPaymentModalProps> = ({ isO
   const gatewayName = {
       mercadopago: 'Mercado Pago',
       asaas: 'Asaas'
-  // FIX: Changed paymentGateway to payment_gateway to match the SiteSettings type.
   }[settings.payment_gateway] || 'Gateway';
 
 
@@ -89,7 +84,6 @@ const SubscriptionPaymentModal: React.FC<SubscriptionPaymentModalProps> = ({ isO
                 ) : (
                     <>
                         <h3 className="text-xl font-semibold text-gray-100">
-                            {/* FIX: Changed paymentGateway to payment_gateway to match the SiteSettings type. */}
                             {settings.payment_gateway === 'manual' ? 'Processando...' : `Conectando com ${gatewayName}...`}
                         </h3>
                         <p className="text-gray-400">Por favor, aguarde.</p>
@@ -99,7 +93,6 @@ const SubscriptionPaymentModal: React.FC<SubscriptionPaymentModalProps> = ({ isO
         );
     }
     
-    // FIX: Changed paymentGateway to payment_gateway to match the SiteSettings type.
     if (settings.payment_gateway === 'manual') {
       return (
         <div className="space-y-4">
@@ -111,11 +104,9 @@ const SubscriptionPaymentModal: React.FC<SubscriptionPaymentModalProps> = ({ isO
           <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
             <p className="text-sm font-medium text-gray-300 mb-1">Chave PIX:</p>
             <div className="flex items-center justify-between bg-gray-700 p-2 rounded-md">
-              {/* FIX: Changed pixKey to pix_key to match the SiteSettings type. */}
               <p className="font-mono text-gray-100 truncate pr-2" title={settings.pix_key}>{settings.pix_key || "Não configurada"}</p>
               <button 
                 onClick={handleCopy}
-                // FIX: Changed pixKey to pix_key to match the SiteSettings type.
                 disabled={!settings.pix_key || copied}
                 className="flex items-center space-x-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-md transition-all shadow-sm disabled:bg-gray-500 disabled:cursor-not-allowed"
               >
@@ -127,7 +118,6 @@ const SubscriptionPaymentModal: React.FC<SubscriptionPaymentModalProps> = ({ isO
 
           <div>
              <p className="text-sm font-medium text-gray-300 mb-1">Instruções:</p>
-             {/* FIX: Changed paymentInstructions to payment_instructions to match the SiteSettings type. */}
              <p className="text-gray-400 text-sm whitespace-pre-wrap">{settings.payment_instructions || "Contate a academia para finalizar o pagamento."}</p>
           </div>
 
@@ -167,7 +157,6 @@ const SubscriptionPaymentModal: React.FC<SubscriptionPaymentModalProps> = ({ isO
   );
 };
 
-// FIX: Changed isBestValue to is_best_value to match the PromotionPlan type.
 const initialFormState: Omit<PromotionPlan, 'id'> = {
   name: '',
   price: 0,
@@ -293,7 +282,6 @@ const PromotionsView: React.FC = () => {
             <div 
               key={plan.id} 
               className={`bg-gray-800 rounded-xl p-8 shadow-sm flex flex-col border-2 relative group ${
-                // FIX: Changed isBestValue to is_best_value to match the PromotionPlan type.
                 plan.is_best_value
                   ? 'border-red-600 shadow-red-900/50' 
                   : 'border-gray-700'
@@ -305,7 +293,6 @@ const PromotionsView: React.FC = () => {
                       <button onClick={() => handleDelete(plan.id!)} className="p-2 text-gray-400 hover:text-red-500 bg-gray-700 rounded-full"><TrashIcon /></button>
                   </div>
               )}
-              {/* FIX: Changed isBestValue to is_best_value to match the PromotionPlan type. */}
               {plan.is_best_value && (
                 <div className="absolute top-0 right-0 -mt-3 mr-3">
                   <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Melhor Valor</span>
@@ -335,7 +322,6 @@ const PromotionsView: React.FC = () => {
               <button
                 onClick={() => handleSubscribeClick(plan)}
                 className={`mt-10 w-full py-3 px-6 rounded-lg font-semibold text-white transition-colors ${
-                  // FIX: Changed isBestValue to is_best_value to match the PromotionPlan type.
                   plan.is_best_value
                     ? 'bg-red-600 hover:bg-red-700' 
                     : 'bg-gray-700 hover:bg-red-600'
@@ -357,7 +343,6 @@ const PromotionsView: React.FC = () => {
           <input type="number" name="total" placeholder="Valor Total (opcional)" value={formData.total || ''} onChange={handleFormChange} className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500" />
           <input type="text" name="features" placeholder="Benefícios (separados por vírgula)" value={featuresString} onChange={handleFeaturesChange} required className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500" />
           <div className="flex items-center">
-            {/* FIX: Changed isBestValue to is_best_value to match the PromotionPlan type. */}
             <input type="checkbox" id="is_best_value" name="is_best_value" checked={formData.is_best_value} onChange={handleFormChange} className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-red-600 focus:ring-red-500" />
             <label htmlFor="is_best_value" className="ml-2 block text-sm text-gray-300">Marcar como "Melhor Valor"?</label>
           </div>

@@ -11,7 +11,6 @@ import { SpinnerIcon } from './icons/SpinnerIcon';
 import { ShoppingCartPlusIcon } from './icons/ShoppingCartPlusIcon';
 import { useAppStore } from '../store';
 
-// FIX: Changed imageUrl to image_url to match the type definition.
 const initialFormState: Omit<Product, 'id'> = {
   name: '',
   price: 0,
@@ -74,7 +73,6 @@ const StoreView: React.FC = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        // FIX: Changed imageUrl to image_url to match the type definition.
         setFormData(prev => ({ ...prev, image_url: reader.result as string }));
       };
       reader.readAsDataURL(file);
@@ -83,7 +81,6 @@ const StoreView: React.FC = () => {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // FIX: Changed imageUrl to image_url to match the type definition.
     if (!formData.image_url) {
       toast.error("Por favor, adicione uma imagem para o produto.");
       return;
@@ -183,7 +180,6 @@ const StoreView: React.FC = () => {
           <div>
             <p className="text-gray-300">Tem certeza que deseja excluir o produto abaixo?</p>
             <div className="mt-4 bg-gray-900 p-4 rounded-lg border border-gray-700 flex items-center space-x-4">
-                {/* FIX: Changed imageUrl to image_url to match the type definition. */}
                 <img src={productToDelete.image_url} alt={productToDelete.name} className="w-16 h-16 object-cover rounded-md" />
                 <div>
                     <p className="font-semibold text-gray-100">{productToDelete.name}</p>
@@ -215,10 +211,8 @@ const StoreView: React.FC = () => {
           </div>
            <div>
             <label htmlFor="imageFile" className="block text-sm font-medium text-gray-300 mb-1">Imagem do Produto</label>
-            {/* FIX: Changed imageUrl to image_url to match the type definition. */}
             {formData.image_url && (
               <div className="my-2">
-                {/* FIX: Changed imageUrl to image_url to match the type definition. */}
                 <img src={formData.image_url} alt="Preview" className="w-full h-40 object-cover rounded-md border border-gray-600" />
               </div>
             )}
